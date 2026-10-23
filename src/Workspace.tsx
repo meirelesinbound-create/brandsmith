@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { supabase } from './lib/supabase'
 import {
   ArrowDownRight, ArrowRight, Atom, Check, ChevronDown, CircleHelp,
   Command, Download, FileText, FolderOpen, Lightbulb, Menu, Plus, Search, Upload,
@@ -26,7 +27,12 @@ const stages = [
   { number: '04', name: 'Expressar', detail: 'Transformar direção em linguagem e identidade', icon: Lightbulb },
 ]
 
-function Workspace() {
+type DirectionDraft = { opportunity: string; tension: string; distinction: string; validation: string }
+type CloudProject = { id: string; name: string; category: string; stage: string; color: string; investigation_answers: string[]; interpretation_notes: string; direction_notes: DirectionDraft; updated_at?: string }
+
+function Workspace({ userId }: { userId?: string }) {
+  const [cloudReady, setCloudReady] = useState(!userId || !supabase)
+  const [cloudError, setCloudError] = useState('')
   const [projects, setProjects] = useState<Project[]>(() => {
     try {
       const saved = localStorage.getItem('brandsmith.projects')
@@ -53,7 +59,6 @@ function Workspace() {
   const [interpretationNotes, setInterpretationNotes] = useState<Record<string, string>>(() => { try { return JSON.parse(localStorage.getItem('brandsmith.interpretations') || '{}') as Record<string, string> } catch { return {} } })
   const [draftInterpretation, setDraftInterpretation] = useState('')
   const [directionProject, setDirectionProject] = useState<string | null>(null)
-  type DirectionDraft = { opportunity: string; tension: string; distinction: string; validation: string }
   const emptyDirection: DirectionDraft = { opportunity: '', tension: '', distinction: '', validation: '' }
   const [directionNotes, setDirectionNotes] = useState<Record<string, DirectionDraft>>(() => { try { return JSON.parse(localStorage.getItem('brandsmith.directions') || '{}') as Record<string, DirectionDraft> } catch { return {} } })
   const [draftDirection, setDraftDirection] = useState<DirectionDraft>(emptyDirection)
@@ -84,6 +89,113 @@ function Workspace() {
     if (questionIndex < investigationQuestions.length - 1) setQuestionIndex(questionIndex + 1)
     else setQuestionIndex(investigationQuestions.length)
   }
+
+  useEffect(() => {
+    if (!userId || !supabase) { setCloudReady(true); return }
+    let cancelled = false
+    async function loadCloudProjects() {
+      setCloudReady(false)
+      setCloudError('')
+      const { data, error } = await supabase!
+        .from('brand_projects')
+        .select('id,name,category,stage,color,investigation_answers,interpretation_notes,direction_notes,updated_at')
+        .eq('owner_id', userId)
+        .order('updated_at', { ascending: false })
+      if (cancelled) return
+      if (error) {
+        setCloudError('Não foi possível carregar os projetos da nuvem. Confira se a migração do Supabase foi aplicada.')
+        setCloudReady(true)
+        return
+      }
+      const rows = (data || []) as CloudProject[]
+      if (rows.length > 0) {
+        const nextProjects: Project[] = rows.map(row => ({
+          id: row.id, name: row.name, category: row.category, stage: row.stage,
+          color: row.color || 'lime', updated: 'Salvo na nuvem',
+        }))
+        const nextInvestigations: Record<string, string[]> = {}
+        const nextInterpretations: Record<string, string> = {}
+        const nextDirections: Record<string, DirectionDraft> = {}
+        rows.forEach(row => {
+          nextInvestigations[row.id] = Array.isArray(row.investigation_answers) ? row.investigation_answers : []
+          nextInterpretations[row.id] = row.interpretation_notes || ''
+          nextDirections[row.id] = row.direction_notes || { opportunity: '', tension: '', distinction: '', validation: '' }
+        })
+        setProjects(nextProjects); setInvestigations(nextInvestigations)
+        setInterpretationNotes(nextInterpretations); setDirectionNotes(nextDirections)
+        localStorage.setItem('brandsmith.projects', JSON.stringify(nextProjects))
+        localStorage.setItem('brandsmith.investigations', JSON.stringify(nextInvestigations))
+        localStorage.setItem('brandsmith.interpretations', JSON.stringify(nextInterpretations))
+        localStorage.setItem('brandsmith.directions', JSON.stringify(nextDirections))
+      } else {
+        // First cloud login: migrate this browser's existing projects and related notes.
+        const localProjects = (() => { try { return JSON.parse(localStorage.getItem('brandsmith.projects') || 'null') as Project[] | null } catch { return null } })()
+        const localInvestigations = (() => { try { return JSON.parse(localStorage.getItem('brandsmith.investigations') || '{}') as Record<string, string[]> } catch { return {} } })()
+        const localInterpretations = (() => { try { return JSON.parse(localStorage.getItem('brandsmith.interpretations') || '{}') as Record<string, string> } catch { return {} } })()
+        const localDirections = (() => { try { return JSON.parse(localStorage.getItem('brandsmith.directions') || '{}') as Record<string, DirectionDraft> } catch { return {} } })()
+        const sourceProjects = Array.isArray(localProjects) ? localProjects : projects
+        const idMap = new Map<string, string>()
+        const migrated = sourceProjects.map(project => {
+          const id = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(project.id) ? project.id : crypto.randomUUID()
+          idMap.set(project.id, id)
+          return { ...project, id }
+        })
+        const answers: Record<string, string[]> = {}
+        const interpretations: Record<string, string> = {}
+        const directions: Record<string, DirectionDraft> = {}
+        migrated.forEach(project => {
+          const oldId = [...idMap.entries()].find(([, newId]) => newId === project.id)?.[0] || project.id
+          answers[project.id] = localInvestigations[oldId] || []
+          interpretations[project.id] = localInterpretations[oldId] || ''
+          directions[project.id] = localDirections[oldId] || { opportunity: '', tension: '', distinction: '', validation: '' }
+        })
+        const { error: migrationError } = await supabase!.from('brand_projects').upsert(
+          migrated.map(project => ({
+            id: project.id, owner_id: userId, name: project.name, category: project.category,
+            stage: project.stage, color: project.color || 'lime',
+            investigation_answers: answers[project.id],
+            interpretation_notes: interpretations[project.id],
+            direction_notes: directions[project.id],
+          })),
+          { onConflict: 'id' },
+        )
+        if (cancelled) return
+        if (migrationError) {
+          setCloudError('Não foi possível migrar os dados locais. Eles continuam neste navegador; confira a migração e as políticas do Supabase.')
+        } else {
+          setProjects(migrated); setInvestigations(answers); setInterpretationNotes(interpretations); setDirectionNotes(directions)
+          localStorage.setItem('brandsmith.projects', JSON.stringify(migrated))
+          localStorage.setItem('brandsmith.investigations', JSON.stringify(answers))
+          localStorage.setItem('brandsmith.interpretations', JSON.stringify(interpretations))
+          localStorage.setItem('brandsmith.directions', JSON.stringify(directions))
+          setNotice('Projetos e registros deste navegador foram transferidos para sua conta.')
+        }
+      }
+      if (!cancelled) setCloudReady(true)
+    }
+    void loadCloudProjects()
+    return () => { cancelled = true }
+  // Load once per authenticated account; subsequent changes are handled by the sync effect below.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId])
+
+  useEffect(() => {
+    if (!userId || !supabase || !cloudReady || cloudError) return
+    const rows = projects.map(project => ({
+      id: project.id, owner_id: userId, name: project.name, category: project.category,
+      stage: project.stage, color: project.color || 'lime',
+      investigation_answers: investigations[project.id] || [],
+      interpretation_notes: interpretationNotes[project.id] || '',
+      direction_notes: directionNotes[project.id] || { opportunity: '', tension: '', distinction: '', validation: '' },
+    }))
+    if (rows.length === 0) return
+    let cancelled = false
+    const timer = window.setTimeout(async () => {
+      const { error } = await supabase!.from('brand_projects').upsert(rows, { onConflict: 'id' })
+      if (!cancelled && error) setCloudError('A sincronização falhou. Seus dados locais continuam disponíveis; verifique a conexão com o Supabase.')
+    }, 500)
+    return () => { cancelled = true; window.clearTimeout(timer) }
+  }, [userId, cloudReady, cloudError, projects, investigations, interpretationNotes, directionNotes])
 
   const filteredProjects = useMemo(
     () => projects.filter((project) => project.name.toLowerCase().includes(search.toLowerCase()) || project.category.toLowerCase().includes(search.toLowerCase())),
@@ -272,9 +384,10 @@ function Workspace() {
       <main className="main-area">
         <header className="topbar">
           <div className="breadcrumb"><span>Workspace</span><span className="crumb-slash">/</span><strong>{activeProject ? activeProject.name : activeNav}</strong></div>
-          <div className="topbar-right"><span className="status-dot" />MVP em construção<button className="icon-button" aria-label="Ajuda" onClick={() => setNotice('Esta é a primeira estrutura navegável do BRANDSMITH. Os projetos ficam salvos neste navegador nesta etapa.')}><CircleHelp size={18} /></button></div>
+          <div className="topbar-right"><span className="status-dot" />{userId ? (cloudError ? 'Sincronização pendente' : cloudReady ? 'Conta conectada' : 'Carregando projetos…') : 'MVP em construção'}<button className="icon-button" aria-label="Ajuda" onClick={() => setNotice('Esta é a primeira estrutura navegável do BRANDSMITH. Os projetos ficam salvos neste navegador nesta etapa.')}><CircleHelp size={18} /></button></div>
         </header>
 
+        {cloudError && <div className="notice-inline" role="status">{cloudError}</div>}
         <div className="page-content">
           {activeProject ? (
             <section className="project-detail">

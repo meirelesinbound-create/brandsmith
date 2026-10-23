@@ -40,5 +40,5 @@ export default function App() {
   }
 
   if (!session) return <AuthScreen onAuthenticated={setSession} />
-  return <Workspace />
+  return <Workspace userId={session.user.id} />
 }

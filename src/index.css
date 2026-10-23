@@ -313,3 +313,89 @@ body,button,input,textarea{font-family:var(--body)}
 @media(prefers-reduced-motion:reduce){
   .brand-word::after{transition:none}
 }
+
+
+/* Cartões de projeto: hierarquia mais editorial e estados de interação consistentes. */
+.project-card{
+  position:relative;
+  isolation:isolate;
+  border-color:rgba(242,240,233,.16);
+  transition:border-color .18s ease,background-color .18s ease,transform .18s ease;
+}
+.project-card::before{
+  content:"";
+  position:absolute;
+  z-index:-1;
+  top:0;
+  left:0;
+  width:34px;
+  height:3px;
+  background:var(--lime);
+  transform:scaleX(.55);
+  transform-origin:left;
+  transition:width .18s ease,transform .18s ease;
+}
+.project-card:hover::before,
+.project-card:focus-visible::before{
+  width:100%;
+  transform:scaleX(1);
+}
+.project-card:focus-visible{
+  outline:2px solid var(--lime);
+  outline-offset:3px;
+}
+.project-card-top{
+  min-height:24px;
+}
+.project-type{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  text-transform:uppercase;
+  letter-spacing:.075em;
+}
+.project-type::before{
+  content:"";
+  width:5px;
+  height:5px;
+  background:var(--lime);
+  flex:0 0 5px;
+}
+.project-art{
+  border:1px solid rgba(17,17,17,.12);
+}
+.project-card-bottom{
+  padding-top:3px;
+}
+.project-card-bottom h3{
+  letter-spacing:-.015em;
+}
+.card-open{
+  transition:background-color .18s ease,color .18s ease,border-color .18s ease;
+}
+.project-card:hover .card-open,
+.project-card:focus-visible .card-open{
+  background:var(--lime);
+  border-color:var(--lime);
+  color:var(--black);
+}
+.card-progress{
+  overflow:hidden;
+}
+.card-progress span{
+  transition:width .25s ease;
+}
+.new-project-card{
+  position:relative;
+  transition:border-color .18s ease,background-color .18s ease;
+}
+.new-project-card:hover{
+  background:rgba(215,255,56,.035);
+}
+.new-project-card:focus-visible{
+  outline:2px solid var(--lime);
+  outline-offset:3px;
+}
+@media(prefers-reduced-motion:reduce){
+  .project-card,.project-card::before,.card-open,.card-progress span,.new-project-card{transition:none}
+}

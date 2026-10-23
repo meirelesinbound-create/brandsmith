@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import {
   ArrowDownRight, ArrowRight, Atom, Check, ChevronDown, CircleHelp,
-  Command, FileText, FolderOpen, Lightbulb, Menu, Plus, Search,
+  Command, Download, FileText, FolderOpen, Lightbulb, Menu, Plus, Search, Upload,
   Settings2, Sparkles, Target, X
 } from 'lucide-react'
 
@@ -183,6 +183,69 @@ function App() {
     setNotice('Dossiê exportado em Markdown. Você pode abrir e editar o arquivo em qualquer editor de texto.')
   }
 
+  function exportBackup() {
+    const backup = {
+      format: 'brandsmith-backup',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      projects,
+      investigations,
+      interpretations: interpretationNotes,
+      directions: directionNotes,
+    }
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `brandsmith-backup-${new Date().toISOString().slice(0, 10)}.json`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
+    setNotice('Backup exportado. Guarde o arquivo em um local seguro.')
+  }
+
+  async function importBackup(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    try {
+      const data: unknown = JSON.parse(await file.text())
+      if (!data || typeof data !== 'object') throw new Error('Arquivo inválido')
+      const backup = data as Record<string, unknown>
+      if (backup.format !== 'brandsmith-backup' || backup.version !== 1 || !Array.isArray(backup.projects)) {
+        throw new Error('Este arquivo não parece ser um backup compatível do BRANDSMITH.')
+      }
+      const validProjects = backup.projects.every((item) => item && typeof item === 'object' &&
+        typeof (item as Record<string, unknown>).id === 'string' &&
+        typeof (item as Record<string, unknown>).name === 'string' &&
+        typeof (item as Record<string, unknown>).category === 'string' &&
+        typeof (item as Record<string, unknown>).stage === 'string')
+      const validRecord = (value: unknown) => value !== null && typeof value === 'object' && !Array.isArray(value)
+      if (!validProjects || !validRecord(backup.investigations) || !validRecord(backup.interpretations) || !validRecord(backup.directions)) {
+        throw new Error('O backup está incompleto ou contém dados em formato inesperado.')
+      }
+      if (!window.confirm('Importar este backup substituirá os projetos e dados salvos neste navegador. Exporte um backup atual antes de continuar, se quiser preservá-lo. Deseja continuar?')) return
+      const nextProjects = backup.projects as Project[]
+      const nextInvestigations = backup.investigations as Record<string, string[]>
+      const nextInterpretations = backup.interpretations as Record<string, string>
+      const nextDirections = backup.directions as Record<string, DirectionDraft>
+      localStorage.setItem('brandsmith.projects', JSON.stringify(nextProjects))
+      localStorage.setItem('brandsmith.investigations', JSON.stringify(nextInvestigations))
+      localStorage.setItem('brandsmith.interpretations', JSON.stringify(nextInterpretations))
+      localStorage.setItem('brandsmith.directions', JSON.stringify(nextDirections))
+      setProjects(nextProjects)
+      setInvestigations(nextInvestigations)
+      setInterpretationNotes(nextInterpretations)
+      setDirectionNotes(nextDirections)
+      setSelectedProject(null)
+      setActiveNav('Projetos')
+      setNotice('Backup importado. Os projetos e registros foram restaurados neste navegador.')
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Não foi possível importar esse arquivo.')
+    }
+  }
+
   const activeProject = projects.find((project) => project.id === selectedProject)
 
   return (
@@ -237,6 +300,7 @@ function App() {
 
               <section className="projects-section">
                 <div className="section-heading projects-heading"><div><span className="mini-label">SEU ESPAÇO CRIATIVO</span><h2>Projetos<span className="lime-period">.</span> <span className="project-total">{projects.length.toString().padStart(2, '0')}</span></h2></div><button className="primary-button" onClick={() => setShowCreate(true)}><Plus size={17} /> Novo projeto</button></div>
+                <div className="backup-actions"><button className="secondary-button" onClick={exportBackup}><Download size={15} /> Exportar backup</button><label className="secondary-button backup-import"><Upload size={15} /> Importar backup<input type="file" accept="application/json,.json" onChange={importBackup} /></label></div>
                 <div className="project-toolbar"><div className="search-box"><Search size={16} /><input aria-label="Buscar projetos" placeholder="Buscar projetos..." value={search} onChange={(event) => setSearch(event.target.value)} /><kbd><Command size={11} /> K</kbd></div><span className="sort-label">ORDENADOS POR ATIVIDADE <ChevronDown size={13} /></span></div>
                 <div className="project-grid">
                   {filteredProjects.map((project, index) => (

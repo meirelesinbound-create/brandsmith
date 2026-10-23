@@ -33,21 +33,7 @@ export default function App() {
     }
   }, [])
 
-  if (!isSupabaseConfigured) {
-    return (
-      <div className="app-shell">
-        <main className="main-area">
-          <div className="page-content">
-            <section className="welcome-block">
-              <div className="eyebrow"><span className="eyebrow-line" />ESTÚDIO DE BRANDING COM IA</div>
-              <h1>O óbvio não cria<br /><em>marcas extraordinárias.</em></h1>
-              <p>A conexão com a conta ainda não foi configurada neste ambiente. Configure as variáveis públicas do Supabase para ativar a autenticação. Nenhuma credencial secreta deve ser adicionada ao frontend.</p>
-            </section>
-          </div>
-        </main>
-      </div>
-    )
-  }
+  if (!isSupabaseConfigured) return <Workspace />
 
   if (loading) {
     return <div className="auth-screen"><div className="auth-panel"><span className="auth-brand">BRANDSMITH<span>.</span></span><p>Preparando seu espaço criativo…</p></div></div>

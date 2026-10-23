@@ -220,3 +220,39 @@ body,button,input,textarea{font-family:var(--body)}
   .welcome-stamp span:first-child{font-size:30px}
   .welcome-stamp span:last-child{font-size:6px}
 }
+
+
+/* Assinatura visual: símbolo geométrico com corte editorial, sem alterar o lockup textual. */
+.brand-symbol{
+  font-size:0;
+  overflow:visible;
+  isolation:isolate;
+  background:var(--lime);
+  clip-path:polygon(0 0,100% 0,100% 100%,0 100%,0 0);
+}
+.brand-symbol::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:var(--black);
+  clip-path:polygon(0 40%,100% 24%,100% 39%,0 55%);
+  z-index:1;
+}
+.brand-symbol::after{
+  content:"";
+  position:absolute;
+  right:0;
+  bottom:0;
+  width:38%;
+  height:38%;
+  background:var(--black);
+  clip-path:polygon(22% 0,100% 0,100% 100%,0 100%);
+  z-index:1;
+}
+.brand-symbol span{display:none}
+.brand-lockup:hover .brand-symbol::before{
+  clip-path:polygon(0 44%,100% 28%,100% 43%,0 59%);
+}
+@media(prefers-reduced-motion:no-preference){
+  .brand-symbol::before{transition:clip-path .18s ease}
+}

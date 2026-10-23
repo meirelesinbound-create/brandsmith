@@ -256,3 +256,60 @@ body,button,input,textarea{font-family:var(--body)}
 @media(prefers-reduced-motion:no-preference){
   .brand-symbol::before{transition:clip-path .18s ease}
 }
+
+
+/* Lockup editorial: aproxima símbolo e lettering como uma única assinatura. */
+.brand-lockup{
+  gap:12px;
+  width:max-content;
+  max-width:100%;
+}
+.brand-symbol{
+  flex:0 0 30px;
+  transform:skew(-8deg) rotate(-2deg);
+  box-shadow:3px 3px 0 rgba(215,255,56,.18);
+}
+.brand-word{
+  position:relative;
+  display:inline-block;
+  padding:0 0 7px;
+  font-size:15px;
+  line-height:1;
+  letter-spacing:.015em;
+}
+.brand-word::after{
+  content:"";
+  position:absolute;
+  left:0;
+  bottom:0;
+  width:24px;
+  height:2px;
+  background:var(--lime);
+  transform:scaleX(.72);
+  transform-origin:left center;
+  transition:width .18s ease,transform .18s ease;
+}
+.brand-period{
+  display:inline-block;
+  margin-left:1px;
+  font-size:1.18em;
+  line-height:.7;
+  transform:translateY(1px);
+}
+.brand-lockup:hover .brand-word::after,
+.brand-lockup:focus-visible .brand-word::after{
+  width:100%;
+  transform:scaleX(1);
+}
+.brand-lockup:focus-visible{
+  outline:1px solid var(--lime);
+  outline-offset:5px;
+}
+@media(max-width:720px){
+  .brand-lockup{gap:9px}
+  .brand-symbol{flex-basis:27px;width:27px;height:27px}
+  .brand-word{font-size:14px;padding-bottom:6px}
+}
+@media(prefers-reduced-motion:reduce){
+  .brand-word::after{transition:none}
+}

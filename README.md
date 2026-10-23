@@ -12,7 +12,7 @@ Construir um MVP para apoiar projetos de branding por meio de investigação ada
 
 As funcionalidades são desenvolvidas em branches separadas e propostas por pull requests para revisão antes de qualquer merge.
 
-## Persistência em nuvem (preparação)
+## Persistência em nuvem
 
 A migração inicial do Supabase está em `supabase/migrations/20261023000100_create_brand_projects.sql`.
 Ela cria a tabela `public.brand_projects` com os campos de trabalho do projeto e políticas de Row Level Security (RLS) para que cada usuário autenticado só possa ler, criar, atualizar ou apagar as próprias linhas.
@@ -24,4 +24,4 @@ Ela cria a tabela `public.brand_projects` com os campos de trabalho do projeto e
 3. Para hospedagem, configure essas mesmas variáveis no ambiente de build/publicação.
 4. Use somente a chave pública/publishable (ou anon legada) no frontend. Nunca exponha uma chave `secret` ou `service_role`.
 
-O cliente Supabase agora tem configuração centralizada em `src/lib/supabase.ts`. A aplicação continua usando o armazenamento local até que a autenticação e a sincronização sejam conectadas nas próximas etapas; configurar o cliente, por si só, não migra nem sincroniza dados.
+O cliente Supabase fica centralizado em `src/lib/supabase.ts`. Com as variáveis configuradas e a migração SQL aplicada, a aplicação exige autenticação e sincroniza projetos, respostas da investigação, notas de interpretação e direção estratégica. No primeiro acesso de uma conta sem projetos na nuvem, os dados existentes no navegador são migrados para essa conta; os dados locais não são apagados. Se já houver projetos na nuvem, eles são carregados como fonte principal. Faça um backup JSON antes de testar em um navegador com trabalho importante.

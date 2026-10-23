@@ -86,8 +86,13 @@ function Workspace({ userId }: { userId?: string }) {
     const nextAnswers = [...currentInvestigation]
     nextAnswers[questionIndex] = currentAnswer.trim()
     const next = { ...investigations, [investigationProject]: nextAnswers }
+    try {
+      localStorage.setItem('brandsmith.investigations', JSON.stringify(next))
+    } catch {
+      setNotice('Não foi possível salvar a investigação neste navegador. Sua resposta continua no campo; libere espaço ou habilite o armazenamento e tente novamente.')
+      return
+    }
     setInvestigations(next)
-    try { localStorage.setItem('brandsmith.investigations', JSON.stringify(next)) } catch { setNotice('Não foi possível salvar a investigação neste navegador.') }
     setCurrentAnswer('')
     if (questionIndex < investigationQuestions.length - 1) setQuestionIndex(questionIndex + 1)
     else setQuestionIndex(investigationQuestions.length)

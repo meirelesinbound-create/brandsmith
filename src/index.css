@@ -152,3 +152,71 @@ body,button,input,textarea{font-family:var(--body)}
 .project-card{box-shadow:none}
 .project-card:focus-visible,.new-project-card:focus-visible{outline:2px solid var(--lime);outline-offset:3px}
 @media(max-width:720px){.brand-symbol{clip-path:polygon(0 0,100% 0,100% 72%,72% 72%,55% 100%,0 100%)}}
+
+
+/* BRANDSMITH — composição editorial do dashboard */
+.welcome-block{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(110px,190px);
+  column-gap:clamp(20px,4vw,64px);
+  align-items:end;
+  padding:clamp(24px,4vw,54px) 0 38px;
+  border-bottom:1px solid var(--line);
+}
+.welcome-block>.eyebrow,
+.welcome-block>h1,
+.welcome-block>p{grid-column:1}
+.welcome-block>.eyebrow{align-self:end;margin-bottom:22px}
+.welcome-block h1{max-width:760px;margin:0 0 22px}
+.welcome-block>p{margin:0;max-width:490px;line-height:1.85}
+.welcome-stamp{
+  position:relative;inset:auto;grid-column:2;grid-row:1 / span 3;
+  justify-self:end;align-self:center;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:8px;
+  width:clamp(108px,13vw,164px);height:clamp(108px,13vw,164px);
+  margin:0 8px 0 0;border:1px solid var(--lime);color:var(--lime);
+  background:transparent;transform:rotate(5deg);
+}
+.welcome-stamp:before{inset:7px;border:1px solid rgba(215,255,56,.28)}
+.welcome-stamp span:first-child{font-family:var(--display);font-size:clamp(38px,5vw,58px);line-height:.8;font-weight:800;letter-spacing:-.06em}
+.welcome-stamp span:last-child{font:9px/1.5 var(--mono);letter-spacing:.12em;text-align:center}
+.projects-section{padding-top:clamp(28px,4vw,48px)}
+.projects-heading{align-items:end;border-bottom:1px solid var(--line);padding-bottom:18px}
+.projects-heading h2{display:flex;align-items:baseline;gap:8px;margin-top:8px}
+.project-total{font:11px var(--mono);color:var(--gray);letter-spacing:0}
+.project-toolbar{padding:17px 0 20px}
+.project-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.project-card{min-width:0;display:flex;flex-direction:column;text-align:left;overflow:hidden}
+.project-art{position:relative;display:flex;align-items:center;justify-content:flex-start;padding:clamp(18px,3vw,34px);min-height:150px}
+.art-word{position:relative;z-index:1;max-width:88%;overflow-wrap:anywhere;font-size:clamp(32px,4.2vw,58px);line-height:.84;letter-spacing:-.035em}
+.art-grid{position:absolute;inset:0;pointer-events:none}
+.art-mark{z-index:1}
+.project-card-bottom{flex:1;align-items:center;gap:14px;padding:2px 2px 16px}
+.project-card-bottom>div{min-width:0}
+.project-card-bottom h3,.project-card-bottom p{overflow-wrap:anywhere}
+.project-card-bottom p{line-height:1.5}
+.card-progress{margin:0 -12px}
+.new-project-card{align-items:flex-start;text-align:left;padding:24px;justify-content:center}
+.new-project-icon{margin-bottom:10px}
+.new-project-cta{margin-top:8px}
+@media(max-width:720px){
+  .welcome-block{grid-template-columns:minmax(0,1fr) 58px;column-gap:10px;padding:20px 0 28px}
+  .welcome-block>.eyebrow{margin-bottom:16px;font-size:8px}
+  .welcome-block h1{font-size:clamp(39px,10.8vw,60px);line-height:.9;margin-bottom:15px}
+  .welcome-block>p{font-size:12px;line-height:1.7}
+  .welcome-stamp{width:54px;height:54px;margin-right:0;align-self:start;margin-top:5px}
+  .welcome-stamp:before{inset:3px}
+  .welcome-stamp span:first-child{font-size:20px}
+  .welcome-stamp span:last-child{font-size:4px;letter-spacing:.05em}
+  .projects-heading{gap:14px}
+  .project-grid{grid-template-columns:1fr;gap:12px}
+  .project-art{height:clamp(155px,48vw,220px);padding:24px}
+  .art-word{font-size:clamp(38px,11vw,58px)}
+  .new-project-card{min-height:170px;padding:20px}
+}
+@media(min-width:721px) and (max-width:980px){
+  .welcome-block{grid-template-columns:minmax(0,1fr) 100px;column-gap:24px}
+  .welcome-stamp{width:94px;height:94px}
+  .welcome-stamp span:first-child{font-size:30px}
+  .welcome-stamp span:last-child{font-size:6px}
+}

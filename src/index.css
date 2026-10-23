@@ -119,7 +119,7 @@ button,input,textarea{border-radius:0}
 .auth-intro{color:#b9bcb2;line-height:1.65;font-size:14px;margin:0 0 30px;max-width:390px}
 .auth-form{display:flex;flex-direction:column;gap:9px}
 .auth-form label{font:10px/1.5 monospace;letter-spacing:.12em;color:#c3c6bb;margin-top:8px}
-.auth-form input{width:100%;min-width:0;border:1px solid #484b42;background:#111;color:#f2f0e9;border-radius:0;padding:14px 13px;font:14px inherit;outline:none}
+.auth-form input{width:100%;min-width:0;border:1px solid #484b42;background:#111;color:#f2f0e9;border-radius:0;padding:14px 13px;font:inherit;font-size:14px;outline:none}
 .auth-form input:focus{border-color:#d7ff38;box-shadow:0 0 0 1px #d7ff38}
 .auth-password{display:flex;align-items:center;position:relative}
 .auth-password input{padding-right:46px}

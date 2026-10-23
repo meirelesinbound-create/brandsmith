@@ -216,7 +216,7 @@ function Workspace({ userId }: { userId?: string }) {
     const name = projectName.trim()
     if (!name) return
     const project: Project = {
-      id: `p-${Date.now()}`,
+      id: crypto.randomUUID(),
       name,
       category: category.trim() || 'A definir',
       stage: 'Ponto de partida',

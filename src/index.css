@@ -10,3 +10,11 @@
 
 .interpretation-entry{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:22px 20px;margin:24px 0 30px;background:#1d1f17;border:1px solid #3d422d}.interpretation-entry>div{max-width:520px}.interpretation-entry h3{font-family:'Space Grotesk';font-weight:500;font-size:18px;line-height:1.25;margin:9px 0}.interpretation-entry p{font-size:11px;line-height:1.7;color:#a6a69b;margin:0}.interpretation-entry .secondary-button{display:flex;align-items:center;gap:8px;color:var(--paper);border-color:#555747;white-space:nowrap}.interpretation-groups{display:grid;gap:10px;margin:22px 0 26px}.interpretation-groups article{padding:16px 17px;background:#202119;border:1px solid #3b3d31}.interpretation-tag{font:9px 'DM Mono';letter-spacing:.06em}.interpretation-tag.evidence{color:#c8c6b7}.interpretation-tag.preference{color:var(--lime)}.interpretation-tag.hypothesis{color:#c4b5ff}.interpretation-groups p{font-size:12px;line-height:1.75;color:#e1e0d6;margin:10px 0;white-space:pre-wrap;overflow-wrap:anywhere}.interpretation-groups small{display:block;color:#939489;font-size:10px;line-height:1.6;margin:9px 0}.interpretation-modal textarea{min-height:105px}
 @media(max-width:600px){.interpretation-entry{align-items:stretch;flex-direction:column;padding:17px}.interpretation-entry .secondary-button{justify-content:center;white-space:normal}.interpretation-groups article{padding:14px}}
+
+.direction-entry .primary-button{display:flex;align-items:center;gap:8px;white-space:nowrap}
+.direction-modal .direction-fields{display:grid;gap:14px;margin:22px 0}
+.direction-fields label{display:grid;gap:8px;color:#d7ff38;font:9px 'DM Mono';letter-spacing:.06em}
+.direction-fields textarea{width:100%;resize:vertical;min-height:78px;padding:13px 14px;background:#171812;border:1px solid #45463a;color:var(--paper);font:12px 'DM Sans';line-height:1.7;letter-spacing:0;outline:none}
+.direction-fields textarea:focus{border-color:var(--lime)}
+.direction-fields textarea::placeholder{color:#77786c}
+@media(max-width:600px){.direction-entry .primary-button{justify-content:center;white-space:normal}.direction-modal .investigation-actions{flex-direction:column-reverse}.direction-modal .investigation-actions button{width:100%}}

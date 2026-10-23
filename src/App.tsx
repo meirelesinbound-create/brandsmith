@@ -58,7 +58,13 @@ function App() {
     { title: 'O que ainda é uma aposta?', prompt: 'Que suposição sobre o público, o mercado ou o valor da ideia você gostaria de verificar?', kind: 'hipóteses' },
   ]
   const currentInvestigation = investigationProject ? investigations[investigationProject] || [] : []
-  const question = investigationQuestions[questionIndex]
+  const baseQuestion = investigationQuestions[questionIndex]
+  const motivationAnswer = (currentInvestigation[1] || '').toLowerCase()
+  const question = questionIndex === 2 && /concorr|mercado|alternativ|marca|produto/.test(motivationAnswer)
+    ? { ...baseQuestion, title: 'O que faria alguém escolher sua proposta?', prompt: 'Você mencionou um contexto de mercado ou alternativas. Em que situação sua proposta seria realmente mais relevante — e para quem?' }
+    : questionIndex === 3 && /experiên|aconteceu|cliente|usuári|vivi|observei/.test((currentInvestigation[0] || '').toLowerCase())
+      ? { ...baseQuestion, title: 'Que sinais concretos você já observou?', prompt: 'Você descreveu uma experiência ou observação. O que aconteceu, com quem e qual parte é observação direta — em vez de interpretação?' }
+      : baseQuestion
   function saveInvestigationAnswer() {
     if (!investigationProject || !currentAnswer.trim()) return
     const nextAnswers = [...currentInvestigation]
@@ -140,7 +146,7 @@ function App() {
               <button className="back-link" onClick={() => setSelectedProject(null)}>← Voltar para projetos</button>
               <div className="eyebrow"><span className="eyebrow-line" />PROJETO / PONTO DE PARTIDA</div>
               <div className="detail-heading"><div><h1>{activeProject.name}<span className="lime-period">.</span></h1><p className="lead">{activeProject.category}</p></div><span className="stage-pill"><span />{activeProject.stage}</span></div>
-              <div className="detail-callout"><div className="callout-icon"><Sparkles size={21} /></div><div><span className="mini-label">ANTES DE CRIAR, VAMOS ENTENDER</span><h2>O que torna essa marca necessária?</h2><p>Uma marca forte começa com perguntas melhores, não com soluções visuais apressadas. A investigação vai revelar o contexto, as tensões e as oportunidades que merecem ser exploradas.</p><button className="primary-button" onClick={() => { setInvestigationProject(activeProject.id); setQuestionIndex(Math.min((investigations[activeProject.id] || []).length, investigationQuestions.length - 1)); setCurrentAnswer((investigations[activeProject.id] || [])[Math.min((investigations[activeProject.id] || []).length, investigationQuestions.length - 1)] || '') }} >Começar investigação <ArrowRight size={16} /></button></div></div>
+              <div className="detail-callout"><div className="callout-icon"><Sparkles size={21} /></div><div><span className="mini-label">ANTES DE CRIAR, VAMOS ENTENDER</span><h2>O que torna essa marca necessária?</h2><p>Uma marca forte começa com perguntas melhores, não com soluções visuais apressadas. A investigação vai revelar o contexto, as tensões e as oportunidades que merecem ser exploradas.</p><button className="primary-button" onClick={() => { setInvestigationProject(activeProject.id); setQuestionIndex((investigations[activeProject.id] || []).length >= investigationQuestions.length ? investigationQuestions.length : (investigations[activeProject.id] || []).length); setCurrentAnswer((investigations[activeProject.id] || []).length >= investigationQuestions.length ? '' : (investigations[activeProject.id] || [])[(investigations[activeProject.id] || []).length] || '') }} >Começar investigação <ArrowRight size={16} /></button></div></div>
               <div className="section-heading"><div><span className="mini-label">O PROCESSO</span><h2>Um caminho, não uma fórmula.</h2></div><span className="section-aside">04 ETAPAS · VOCÊ VALIDA CADA UMA</span></div>
               <div className="stage-list">{stages.map((stage, index) => { const Icon = stage.icon; return <div className="stage-row" key={stage.number}><span className="stage-number">{stage.number}</span><div className="stage-icon"><Icon size={18} /></div><div className="stage-copy"><h3>{stage.name}</h3><p>{stage.detail}</p></div><span className="stage-state">{index === 0 ? 'Próxima etapa' : 'Aguardando'}</span><ArrowDownRight className="stage-arrow" size={17} /></div> })}</div>
               <div className="notice-inline"><Check size={16} />As decisões estratégicas só serão consolidadas depois de investigadas e validadas por você.</div>

@@ -119,6 +119,70 @@ function App() {
     setNotice('Projeto criado. O próximo passo é investigar antes de definir a direção.')
   }
 
+  function exportProjectBrief(project: Project) {
+    const answers = investigations[project.id] || []
+    const direction = directionNotes[project.id] || emptyDirection
+    const questionLabels = [
+      'O que você está construindo?',
+      'Por que isso precisa existir?',
+      'Para quem isso importa — e em que situação?',
+      'O que já sabemos de verdade?',
+      'O que você já prefere ou quer evitar?',
+      'O que ainda é uma aposta?',
+    ]
+    const lines = [
+      '# BRANDSMITH — Dossiê do projeto',
+      '',
+      `**Projeto:** ${project.name}`,
+      `**Categoria:** ${project.category}`,
+      `**Etapa atual:** ${project.stage}`,
+      `**Exportado em:** ${new Date().toLocaleDateString('pt-BR')}`,
+      '',
+      '> Documento de trabalho. Respostas e hipóteses refletem o que foi registrado no projeto; não são verificações independentes.',
+      '',
+      '## 1. Investigação',
+      ...questionLabels.flatMap((label, index) => ['', `### ${index + 1}. ${label}`, answers[index]?.trim() || '_Ainda não respondido._']),
+      '',
+      '## 2. Interpretação',
+      '',
+      '### Dúvidas, contradições e pontos a verificar',
+      interpretationNotes[project.id]?.trim() || '_Nenhuma nota registrada._',
+      '',
+      '## 3. Direção estratégica em exploração',
+      '',
+      '### Oportunidade relevante',
+      direction.opportunity.trim() || '_Ainda não registrada._',
+      '',
+      '### Tensão a resolver',
+      direction.tension.trim() || '_Ainda não registrada._',
+      '',
+      '### Hipótese de diferenciação',
+      direction.distinction.trim() || '_Ainda não registrada._',
+      '',
+      '### O que precisa ser validado',
+      direction.validation.trim() || '_Ainda não registrado._',
+      '',
+      '## Limites desta síntese',
+      '- A organização das respostas não comprova a veracidade das afirmações.',
+      '- Hipóteses continuam sendo hipóteses até serem verificadas.',
+      '- Este documento não representa uma estratégia final aprovada, a menos que isso tenha sido explicitamente decidido fora deste fluxo.',
+      '',
+      '---',
+      'Gerado pelo BRANDSMITH — O óbvio não cria marcas extraordinárias.',
+    ]
+    const blob = new Blob([lines.join('\\n')], { type: 'text/markdown;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    const slug = project.name.normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'projeto'
+    link.href = url
+    link.download = `brandsmith-${slug}.md`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
+    setNotice('Dossiê exportado em Markdown. Você pode abrir e editar o arquivo em qualquer editor de texto.')
+  }
+
   const activeProject = projects.find((project) => project.id === selectedProject)
 
   return (
@@ -157,6 +221,7 @@ function App() {
               <div className="detail-callout"><div className="callout-icon"><Sparkles size={21} /></div><div><span className="mini-label">ANTES DE CRIAR, VAMOS ENTENDER</span><h2>O que torna essa marca necessária?</h2><p>Uma marca forte começa com perguntas melhores, não com soluções visuais apressadas. A investigação vai revelar o contexto, as tensões e as oportunidades que merecem ser exploradas.</p><button className="primary-button" onClick={() => { setInvestigationProject(activeProject.id); setQuestionIndex((investigations[activeProject.id] || []).length >= investigationQuestions.length ? investigationQuestions.length : (investigations[activeProject.id] || []).length); setCurrentAnswer((investigations[activeProject.id] || []).length >= investigationQuestions.length ? '' : (investigations[activeProject.id] || [])[(investigations[activeProject.id] || []).length] || '') }} >Começar investigação <ArrowRight size={16} /></button></div></div>
               {(investigations[activeProject.id]?.length || 0) >= 6 && <div className="interpretation-entry"><div><span className="mini-label">PRÓXIMA ETAPA</span><h3>Separar o que sabemos do que ainda precisamos descobrir.</h3><p>Organize evidências, preferências e hipóteses antes de formular uma direção estratégica.</p></div><button className="secondary-button" onClick={() => { setInterpretationProject(activeProject.id); setDraftInterpretation(interpretationNotes[activeProject.id] || '') }}>Interpretar investigação <ArrowRight size={15} /></button></div>}
               {activeProject.stage === 'Interpretação validada' && <div className="interpretation-entry direction-entry"><div><span className="mini-label">ETAPA 03 · DIRECIONAR</span><h3>Que caminho estratégico merece ser explorado?</h3><p>Registre uma oportunidade, a tensão que a marca precisa resolver e uma hipótese de diferenciação. Nada será definido automaticamente.</p></div><button className="primary-button" onClick={() => { setDirectionProject(activeProject.id); setDraftDirection(directionNotes[activeProject.id] || emptyDirection) }}>Construir direção <ArrowRight size={15} /></button></div>}
+              <div className="export-brief-row"><div><span className="mini-label">SEU TRABALHO, FORA DO APP</span><p>Exporte as respostas, notas e hipóteses reunidas em um dossiê editável.</p></div><button className="secondary-button" onClick={() => exportProjectBrief(activeProject)}><FileText size={16} /> Exportar dossiê (.md)</button></div>
               <div className="section-heading"><div><span className="mini-label">O PROCESSO</span><h2>Um caminho, não uma fórmula.</h2></div><span className="section-aside">04 ETAPAS · VOCÊ VALIDA CADA UMA</span></div>
               <div className="stage-list">{stages.map((stage, index) => { const Icon = stage.icon; return <div className="stage-row" key={stage.number}><span className="stage-number">{stage.number}</span><div className="stage-icon"><Icon size={18} /></div><div className="stage-copy"><h3>{stage.name}</h3><p>{stage.detail}</p></div><span className="stage-state">{index === 0 ? 'Próxima etapa' : 'Aguardando'}</span><ArrowDownRight className="stage-arrow" size={17} /></div> })}</div>
               <div className="notice-inline"><Check size={16} />As decisões estratégicas só serão consolidadas depois de investigadas e validadas por você.</div>

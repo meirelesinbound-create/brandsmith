@@ -18,3 +18,5 @@
 .direction-fields textarea:focus{border-color:var(--lime)}
 .direction-fields textarea::placeholder{color:#77786c}
 @media(max-width:600px){.direction-entry .primary-button{justify-content:center;white-space:normal}.direction-modal .investigation-actions{flex-direction:column-reverse}.direction-modal .investigation-actions button{width:100%}}
+
+.export-brief-row{display:flex;align-items:center;justify-content:space-between;gap:20px;margin:22px 0 30px;padding:18px 20px;border:1px solid var(--line);background:rgba(242,240,233,.025)}.export-brief-row p{margin:6px 0 0;color:#aaa99f;font-size:12px;line-height:1.6}.export-brief-row .secondary-button{display:inline-flex;align-items:center;gap:8px;white-space:nowrap}@media(max-width:600px){.export-brief-row{align-items:flex-start;flex-direction:column;gap:14px}.export-brief-row .secondary-button{width:100%;justify-content:center}}

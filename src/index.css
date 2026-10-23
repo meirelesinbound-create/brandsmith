@@ -399,3 +399,16 @@ body,button,input,textarea{font-family:var(--body)}
 @media(prefers-reduced-motion:reduce){
   .project-card,.project-card::before,.card-open,.card-progress span,.new-project-card{transition:none}
 }
+
+
+/* Etapa 04 — Expressar: espaço de trabalho editorial, responsivo e revisável. */
+.expression-entry{border-top:1px solid rgba(215,255,56,.4);position:relative}
+.expression-entry:before{content:"";position:absolute;left:0;top:-1px;width:42px;height:3px;background:var(--lime)}
+.expression-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:22px 0}
+.expression-fields label{display:grid;align-content:start;gap:8px;color:var(--lime);font:9px var(--mono);letter-spacing:.06em}
+.expression-fields textarea{width:100%;resize:vertical;min-height:94px;padding:13px 14px;background:#171812;border:1px solid #45463a;color:var(--paper);font:12px var(--body);line-height:1.7;letter-spacing:0;outline:none}
+.expression-fields textarea:focus{border-color:var(--lime)}
+.expression-fields textarea::placeholder{color:#77786c}
+.expression-modal .investigation-actions{flex-wrap:wrap;justify-content:flex-end}
+.expression-modal .primary-button:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:600px){.expression-fields{grid-template-columns:1fr}.expression-modal .investigation-actions{flex-direction:column-reverse}.expression-modal .investigation-actions button{width:100%;justify-content:center}}

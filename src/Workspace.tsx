@@ -336,4 +336,4 @@ function ArrowUpRightIcon() {
   return <ArrowDownRight size={17} style={{ transform: 'rotate(-135deg)' }} />
 }
 
-export default App
+export default Workspace

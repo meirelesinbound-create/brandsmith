@@ -33,6 +33,8 @@ type CloudProject = { id: string; name: string; category: string; stage: string;
 function Workspace({ userId }: { userId?: string }) {
   const [cloudReady, setCloudReady] = useState(!userId || !supabase)
   const [cloudError, setCloudError] = useState('')
+  const [syncError, setSyncError] = useState('')
+  const [syncAttempt, setSyncAttempt] = useState(0)
   const [projects, setProjects] = useState<Project[]>(() => {
     try {
       const saved = localStorage.getItem('brandsmith.projects')
@@ -251,10 +253,15 @@ function Workspace({ userId }: { userId?: string }) {
     let cancelled = false
     const timer = window.setTimeout(async () => {
       const { error } = await supabase!.from('brand_projects').upsert(rows, { onConflict: 'id' })
-      if (!cancelled && error) setCloudError('A sincronização falhou. Seus dados locais continuam disponíveis; verifique a conexão com o Supabase.')
+      if (cancelled) return
+      if (error) {
+        setSyncError('A sincronização falhou. As alterações locais continuam disponíveis, mas ainda não foram confirmadas na nuvem. Verifique a conexão e tente novamente.')
+      } else {
+        setSyncError('')
+      }
     }, 500)
     return () => { cancelled = true; window.clearTimeout(timer) }
-  }, [userId, cloudReady, cloudError, projects, investigations, interpretationNotes, directionNotes])
+  }, [userId, cloudReady, cloudError, syncAttempt, projects, investigations, interpretationNotes, directionNotes])
 
   const filteredProjects = useMemo(
     () => projects.filter((project) => project.name.toLowerCase().includes(search.toLowerCase()) || project.category.toLowerCase().includes(search.toLowerCase())),
@@ -537,6 +544,7 @@ function Workspace({ userId }: { userId?: string }) {
         </header>
 
         {cloudError && <div className="notice-inline" role="status">{cloudError}</div>}
+        {syncError && <div className="notice-inline" role="status">{syncError} <button className="secondary-button" onClick={() => { setSyncError(''); setSyncAttempt(attempt => attempt + 1) }}>Tentar sincronizar novamente</button></div>}
         <div className="page-content">
           {activeProject ? (
             <section className="project-detail">

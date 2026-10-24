@@ -19,7 +19,7 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!supabase) {
-      setError('A conexão com o Supabase não está configurada neste ambiente.')
+      setError('O login não pode funcionar enquanto as variáveis VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY não estiverem configuradas no ambiente de build desta publicação.')
       return
     }
     setBusy(true)
@@ -53,6 +53,7 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
         <div className="auth-eyebrow"><span /> ESPAÇO CRIATIVO PESSOAL</div>
         <h1 id="auth-title">{mode === 'signin' ? <>Seu próximo projeto<br /><em>começa aqui.</em></> : <>Abra seu espaço<br /><em>de criação.</em></>}</h1>
         <p className="auth-intro">Entre para continuar explorando ideias, investigar oportunidades e construir marcas com personalidade própria.</p>
+        {!supabase && <p className="auth-feedback error" role="alert">A autenticação ainda não está configurada nesta publicação. É necessário definir <code>VITE_SUPABASE_URL</code> e <code>VITE_SUPABASE_PUBLISHABLE_KEY</code> nas variáveis de build do Cloudflare e publicar novamente. Secrets do Worker usados pela API não substituem essas variáveis de build.</p>}
         <form className="auth-form" onSubmit={submit}>
           <label htmlFor="auth-email">E-MAIL</label>
           <input id="auth-email" type="email" autoComplete="email" value={email} onChange={event => setEmail(event.target.value)} placeholder="voce@exemplo.com" required maxLength={254} />
@@ -63,7 +64,7 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
           </div>
           {error && <p className="auth-feedback error" role="alert">{error}</p>}
           {message && <p className="auth-feedback success" role="status">{message}</p>}
-          <button className="auth-submit" type="submit" disabled={busy}>{busy ? <><LoaderCircle className="auth-spinner" size={16} /> Aguarde…</> : <>{mode === 'signin' ? 'Entrar no BRANDSMITH' : 'Criar conta'} <ArrowRight size={16} /></>}</button>
+          <button className="auth-submit" type="submit" disabled={busy || !supabase}>{busy ? <><LoaderCircle className="auth-spinner" size={16} /> Aguarde…</> : <>{mode === 'signin' ? 'Entrar no BRANDSMITH' : 'Criar conta'} <ArrowRight size={16} /></>}</button>
         </form>
         <p className="auth-switch">{mode === 'signin' ? 'Ainda não tem uma conta?' : 'Já tem uma conta?'} <button type="button" onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError(''); setMessage('') }}>{mode === 'signin' ? 'Criar conta' : 'Entrar'}</button></p>
         <div className="auth-footnote">O óbvio não cria marcas extraordinárias.</div>

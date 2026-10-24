@@ -35,6 +35,7 @@ function Workspace({ userId }: { userId?: string }) {
   const [cloudError, setCloudError] = useState('')
   const [syncError, setSyncError] = useState('')
   const [syncAttempt, setSyncAttempt] = useState(0)
+  const [loadAttempt, setLoadAttempt] = useState(0)
   const [projects, setProjects] = useState<Project[]>(() => {
     try {
       const saved = localStorage.getItem('brandsmith.projects')
@@ -238,7 +239,7 @@ function Workspace({ userId }: { userId?: string }) {
     return () => { cancelled = true }
   // Load once per authenticated account; subsequent changes are handled by the sync effect below.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId])
+  }, [userId, loadAttempt])
 
   useEffect(() => {
     if (!userId || !supabase || !cloudReady || cloudError) return
@@ -543,7 +544,7 @@ function Workspace({ userId }: { userId?: string }) {
           <div className="topbar-right"><span className="status-dot" />{userId ? (cloudError ? 'Sincronização pendente' : cloudReady ? 'Conta conectada' : 'Carregando projetos…') : 'MVP em construção'}<button className="icon-button" aria-label="Ajuda" onClick={() => setNotice('Esta é a primeira estrutura navegável do BRANDSMITH. Os projetos ficam salvos neste navegador nesta etapa.')}><CircleHelp size={18} /></button></div>
         </header>
 
-        {cloudError && <div className="notice-inline" role="status">{cloudError}</div>}
+        {cloudError && <div className="notice-inline" role="status">{cloudError} <button className="secondary-button" onClick={() => { setCloudReady(false); setCloudError(''); setLoadAttempt(attempt => attempt + 1) }}>Tentar carregar novamente</button></div>}
         {syncError && <div className="notice-inline" role="status">{syncError} <button className="secondary-button" onClick={() => { setSyncError(''); setSyncAttempt(attempt => attempt + 1) }}>Tentar sincronizar novamente</button></div>}
         <div className="page-content">
           {activeProject ? (

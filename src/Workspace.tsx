@@ -417,14 +417,36 @@ function Workspace({ userId }: { userId?: string }) {
       if (backup.format !== 'brandsmith-backup' || backup.version !== 1 || !Array.isArray(backup.projects)) {
         throw new Error('Este arquivo não parece ser um backup compatível do BRANDSMITH.')
       }
-      const validProjects = backup.projects.every((item) => item && typeof item === 'object' &&
-        typeof (item as Record<string, unknown>).id === 'string' &&
-        typeof (item as Record<string, unknown>).name === 'string' &&
-        typeof (item as Record<string, unknown>).category === 'string' &&
-        typeof (item as Record<string, unknown>).stage === 'string')
-      const validRecord = (value: unknown) => value !== null && typeof value === 'object' && !Array.isArray(value)
-      if (!validProjects || !validRecord(backup.investigations) || !validRecord(backup.interpretations) || !validRecord(backup.directions)) {
-        throw new Error('O backup está incompleto ou contém dados em formato inesperado.')
+      const validRecord = (value: unknown): value is Record<string, unknown> =>
+        value !== null && typeof value === 'object' && !Array.isArray(value)
+      const validProjects = backup.projects.every((item) => item && validRecord(item) &&
+        typeof item.id === 'string' && item.id.trim().length > 0 &&
+        typeof item.name === 'string' && item.name.trim().length > 0 &&
+        item.name.length <= 200 &&
+        typeof item.category === 'string' &&
+        typeof item.stage === 'string' &&
+        (item.color === undefined || typeof item.color === 'string'))
+      const projectIds = validProjects
+        ? backup.projects.map(item => (item as Record<string, unknown>).id as string)
+        : []
+      const uniqueProjectIds = new Set(projectIds).size === projectIds.length
+      const validInvestigations = validRecord(backup.investigations) &&
+        Object.values(backup.investigations).every(value => Array.isArray(value) && value.every(answer => typeof answer === 'string'))
+      const validInterpretations = validRecord(backup.interpretations) &&
+        Object.values(backup.interpretations).every(value => typeof value === 'string')
+      const directionFields = ['opportunity', 'tension', 'distinction', 'validation', 'brandPromise', 'personality', 'voicePrinciples', 'visualTerritory', 'avoidances', 'expressionValidation']
+      const validDirections = validRecord(backup.directions) &&
+        Object.values(backup.directions).every(value => validRecord(value) &&
+          Object.entries(value).every(([key, field]) => directionFields.includes(key) && typeof field === 'string'))
+      const relatedIds = [
+        ...Object.keys(validRecord(backup.investigations) ? backup.investigations : {}),
+        ...Object.keys(validRecord(backup.interpretations) ? backup.interpretations : {}),
+        ...Object.keys(validRecord(backup.directions) ? backup.directions : {}),
+      ]
+      const allRelatedIdsExist = relatedIds.every(id => projectIds.includes(id))
+      if (!validProjects || !uniqueProjectIds || !validInvestigations || !validInterpretations ||
+        !validDirections || !allRelatedIdsExist) {
+        throw new Error('O backup está incompleto ou contém dados inconsistentes. Nenhum dado foi alterado.')
       }
       if (!window.confirm('Importar este backup substituirá os projetos e dados salvos neste navegador. Exporte um backup atual antes de continuar, se quiser preservá-lo. Deseja continuar?')) return
       const nextProjects = backup.projects as Project[]

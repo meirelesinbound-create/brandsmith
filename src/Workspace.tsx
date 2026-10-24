@@ -437,7 +437,6 @@ function Workspace({ userId }: { userId?: string }) {
           .eq('owner_id', userId)
         if (cloudLoadError) throw new Error('Não foi possível conferir os projetos da conta. Nenhum dado foi restaurado; tente novamente.')
         const cloudProjects = (cloudRows || []) as CloudProject[]
-        const cloudIds = new Set(cloudProjects.map(row => row.id))
         const backupIds = new Set(nextProjects.map(project => project.id))
         const existingCloudProjects: Project[] = cloudProjects
           .filter(row => !backupIds.has(row.id))

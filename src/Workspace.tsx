@@ -487,7 +487,10 @@ function Workspace({ userId }: { userId?: string }) {
         !validDirections || !allRelatedIdsExist) {
         throw new Error('O backup está incompleto ou contém dados inconsistentes. Nenhum dado foi alterado.')
       }
-      if (!window.confirm('Importar este backup substituirá os projetos e dados salvos neste navegador. Exporte um backup atual antes de continuar, se quiser preservá-lo. Deseja continuar?')) return
+      const importConfirmation = userId && supabase
+        ? 'Importar este backup substituirá os dados salvos neste navegador e combinará os projetos do backup com os da sua conta. Projetos que já estão na nuvem e não aparecem no backup serão preservados. Deseja continuar?'
+        : 'Importar este backup substituirá os projetos e dados salvos neste navegador. Exporte um backup atual antes de continuar, se quiser preservá-lo. Deseja continuar?'
+      if (!window.confirm(importConfirmation)) return
       const sourceProjects = backup.projects as Project[]
       const sourceInvestigations = backup.investigations as Record<string, string[]>
       const sourceInterpretations = backup.interpretations as Record<string, string>

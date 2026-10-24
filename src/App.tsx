@@ -33,7 +33,9 @@ export default function App() {
     }
   }, [])
 
-  if (!isSupabaseConfigured) return <Workspace />
+  // Nunca contorne o login silenciosamente quando as variáveis de build faltarem.
+  // A tela de autenticação informa quais configurações precisam ser corrigidas.
+  if (!isSupabaseConfigured) return <AuthScreen onAuthenticated={setSession} />
 
   if (loading) {
     return <div className="auth-screen"><div className="auth-panel"><span className="auth-brand">BRANDSMITH<span>.</span></span><p>Preparando seu espaço criativo…</p></div></div>

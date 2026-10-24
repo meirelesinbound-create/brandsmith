@@ -650,7 +650,7 @@ function Workspace({ userId }: { userId?: string }) {
                     <button className="secondary-button" onClick={() => { setExpressionProject(activeProject.id); setDraftExpression({ ...emptyExpression, ...expression }) }}>Editar expressão</button>
                     {activeProject.stage === 'Expressão para revisar' && <button className="primary-button" onClick={() => {
                       const current = directionNotes[activeProject.id] || emptyDirection
-                      if (!Object.values(current).some(value => typeof value === 'string' && value.trim())) {
+                      if (![current.brandPromise, current.personality, current.voicePrinciples, current.visualTerritory, current.avoidances, current.expressionValidation].some(value => typeof value === 'string' && value.trim())) {
                         setNotice('Registre pelo menos uma dimensão da expressão antes de aprová-la.')
                         return
                       }

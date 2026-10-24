@@ -479,6 +479,9 @@ function Workspace({ userId }: { userId?: string }) {
           .eq('owner_id', userId)
         if (cloudLoadError) throw new Error('Não foi possível conferir os projetos da conta. Nenhum dado foi restaurado; tente novamente.')
         const cloudProjects = (cloudRows || []) as CloudProject[]
+        const hasLegacyProjectIds = sourceProjects.some(project => !isUuid(project.id))
+        if (hasLegacyProjectIds && cloudProjects.length > 0 &&
+          !window.confirm('Este backup contém IDs antigos de projetos e sua conta já tem projetos salvos na nuvem. Não é possível identificar com segurança quais projetos são equivalentes; restaurar pode criar duplicatas. Nenhum projeto da nuvem será apagado. Se não tiver certeza, cancele e exporte um backup atualizado da conta. Deseja continuar mesmo assim?')) return
         const backupIds = new Set(nextProjects.map(project => project.id))
         const existingCloudProjects: Project[] = cloudProjects
           .filter(row => !backupIds.has(row.id))

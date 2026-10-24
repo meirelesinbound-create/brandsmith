@@ -191,7 +191,7 @@ function Workspace({ userId }: { userId?: string }) {
         const localInvestigations = (() => { try { return JSON.parse(localStorage.getItem('brandsmith.investigations') || '{}') as Record<string, string[]> } catch { return {} } })()
         const localInterpretations = (() => { try { return JSON.parse(localStorage.getItem('brandsmith.interpretations') || '{}') as Record<string, string> } catch { return {} } })()
         const localDirections = (() => { try { return JSON.parse(localStorage.getItem('brandsmith.directions') || '{}') as Record<string, DirectionDraft> } catch { return {} } })()
-        const sourceProjects = Array.isArray(localProjects) ? localProjects : projects
+        const sourceProjects = Array.isArray(localProjects) ? localProjects : []
         const idMap = new Map<string, string>()
         const migrated = sourceProjects.map(project => {
           const id = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(project.id) ? project.id : crypto.randomUUID()

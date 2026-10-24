@@ -417,17 +417,58 @@ function Workspace({ userId }: { userId?: string }) {
       const nextInvestigations = backup.investigations as Record<string, string[]>
       const nextInterpretations = backup.interpretations as Record<string, string>
       const nextDirections = backup.directions as Record<string, DirectionDraft>
-      localStorage.setItem('brandsmith.projects', JSON.stringify(nextProjects))
-      localStorage.setItem('brandsmith.investigations', JSON.stringify(nextInvestigations))
-      localStorage.setItem('brandsmith.interpretations', JSON.stringify(nextInterpretations))
-      localStorage.setItem('brandsmith.directions', JSON.stringify(nextDirections))
-      setProjects(nextProjects)
-      setInvestigations(nextInvestigations)
-      setInterpretationNotes(nextInterpretations)
-      setDirectionNotes(nextDirections)
+      let restoredProjects = nextProjects
+      let restoredInvestigations = nextInvestigations
+      let restoredInterpretations = nextInterpretations
+      let restoredDirections = nextDirections
+
+      // For signed-in users, merge the backup with cloud projects rather than
+      // letting old cloud rows reappear on the next login after a local restore.
+      if (userId && supabase) {
+        const { data: cloudRows, error: cloudLoadError } = await supabase
+          .from('brand_projects')
+          .select('id,name,category,stage,color,investigation_answers,interpretation_notes,direction_notes,updated_at')
+          .eq('owner_id', userId)
+        if (cloudLoadError) throw new Error('Não foi possível conferir os projetos da conta. Nenhum dado foi restaurado; tente novamente.')
+        const cloudProjects = (cloudRows || []) as CloudProject[]
+        const cloudIds = new Set(cloudProjects.map(row => row.id))
+        const backupIds = new Set(nextProjects.map(project => project.id))
+        const existingCloudProjects: Project[] = cloudProjects
+          .filter(row => !backupIds.has(row.id))
+          .map(row => ({ id: row.id, name: row.name, category: row.category, stage: row.stage, color: row.color || 'lime', updated: 'Salvo na nuvem' }))
+        restoredProjects = [...nextProjects, ...existingCloudProjects]
+        restoredInvestigations = { ...Object.fromEntries(cloudProjects.filter(row => !backupIds.has(row.id)).map(row => [row.id, Array.isArray(row.investigation_answers) ? row.investigation_answers : []])), ...nextInvestigations }
+        restoredInterpretations = { ...Object.fromEntries(cloudProjects.filter(row => !backupIds.has(row.id)).map(row => [row.id, row.interpretation_notes || ''])), ...nextInterpretations }
+        restoredDirections = { ...Object.fromEntries(cloudProjects.filter(row => !backupIds.has(row.id)).map(row => [row.id, row.direction_notes || { opportunity: '', tension: '', distinction: '', validation: '' }])), ...nextDirections }
+
+        const { error: cloudSaveError } = await supabase.from('brand_projects').upsert(
+          nextProjects.map(project => ({
+            id: project.id, owner_id: userId, name: project.name, category: project.category,
+            stage: project.stage, color: project.color || 'lime',
+            investigation_answers: nextInvestigations[project.id] || [],
+            interpretation_notes: nextInterpretations[project.id] || '',
+            direction_notes: nextDirections[project.id] || { opportunity: '', tension: '', distinction: '', validation: '' },
+          })),
+          { onConflict: 'id' },
+        )
+        if (cloudSaveError) throw new Error('Não foi possível restaurar o backup na conta. Os dados atuais não foram substituídos; tente novamente.')
+      }
+
+      // Write all local records before updating React state, so storage errors
+      // do not leave the UI claiming that the restore completed.
+      localStorage.setItem('brandsmith.projects', JSON.stringify(restoredProjects))
+      localStorage.setItem('brandsmith.investigations', JSON.stringify(restoredInvestigations))
+      localStorage.setItem('brandsmith.interpretations', JSON.stringify(restoredInterpretations))
+      localStorage.setItem('brandsmith.directions', JSON.stringify(restoredDirections))
+      setProjects(restoredProjects)
+      setInvestigations(restoredInvestigations)
+      setInterpretationNotes(restoredInterpretations)
+      setDirectionNotes(restoredDirections)
       setSelectedProject(null)
       setActiveNav('Projetos')
-      setNotice('Backup importado. Os projetos e registros foram restaurados neste navegador.')
+      setNotice(userId && supabase
+        ? 'Backup restaurado e combinado com os projetos que já estavam na conta. Nenhum projeto antigo foi apagado.'
+        : 'Backup importado. Os projetos e registros foram restaurados neste navegador.')
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Não foi possível importar esse arquivo.')
     }

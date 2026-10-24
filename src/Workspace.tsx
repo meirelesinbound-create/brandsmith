@@ -288,7 +288,7 @@ function Workspace({ userId }: { userId?: string }) {
 
   function saveExpressionChanges(
     projectId: string,
-    stage: 'Expressão em elaboração' | 'Expressão para revisar',
+    stage: 'Expressão em elaboração' | 'Expressão para revisar' | 'Expressão aprovada',
     nextDirections: Record<string, DirectionDraft>,
   ): boolean {
     const nextProjects = projects.map(project =>
@@ -397,6 +397,9 @@ function Workspace({ userId }: { userId?: string }) {
       '',
       '### Critério de validação da expressão',
       direction.expressionValidation?.trim() || '_Ainda não registrado._',
+      '',
+      '### Estado da expressão',
+      project.stage === 'Expressão aprovada' ? 'Expressão aprovada explicitamente no Brandsmith.' : 'Expressão ainda não aprovada como decisão final.',
       '',
       '## Limites desta síntese',
       '- A organização das respostas não comprova a veracidade das afirmações.',
@@ -623,10 +626,41 @@ function Workspace({ userId }: { userId?: string }) {
               <div className="detail-callout"><div className="callout-icon"><Sparkles size={21} /></div><div><span className="mini-label">ANTES DE CRIAR, VAMOS ENTENDER</span><h2>O que torna essa marca necessária?</h2><p>Uma marca forte começa com perguntas melhores, não com soluções visuais apressadas. A investigação vai revelar o contexto, as tensões e as oportunidades que merecem ser exploradas.</p><button className="primary-button" onClick={() => { setInvestigationProject(activeProject.id); setQuestionIndex((investigations[activeProject.id] || []).length >= investigationQuestions.length ? investigationQuestions.length : (investigations[activeProject.id] || []).length); setCurrentAnswer((investigations[activeProject.id] || []).length >= investigationQuestions.length ? '' : (investigations[activeProject.id] || [])[(investigations[activeProject.id] || []).length] || '') }} >Começar investigação <ArrowRight size={16} /></button></div></div>
               {(investigations[activeProject.id]?.length || 0) >= 6 && <div className="interpretation-entry"><div><span className="mini-label">PRÓXIMA ETAPA</span><h3>Separar o que sabemos do que ainda precisamos descobrir.</h3><p>Organize evidências, preferências e hipóteses antes de formular uma direção estratégica.</p></div><button className="secondary-button" onClick={() => { setInterpretationProject(activeProject.id); setDraftInterpretation(interpretationNotes[activeProject.id] || '') }}>Interpretar investigação <ArrowRight size={15} /></button></div>}
               {activeProject.stage === 'Interpretação validada' && <div className="interpretation-entry direction-entry"><div><span className="mini-label">ETAPA 03 · DIRECIONAR</span><h3>Que caminho estratégico merece ser explorado?</h3><p>Registre uma oportunidade, a tensão que a marca precisa resolver e uma hipótese de diferenciação. Nada será definido automaticamente.</p></div><button className="primary-button" onClick={() => { setDirectionProject(activeProject.id); setDraftDirection(directionNotes[activeProject.id] || emptyDirection) }}>Construir direção <ArrowRight size={15} /></button></div>}
-              {['Direção em elaboração', 'Direção para revisar', 'Expressão em elaboração', 'Expressão para revisar'].includes(activeProject.stage) && <div className="interpretation-entry expression-entry"><div><span className="mini-label">ETAPA 04 · EXPRESSAR</span><h3>Como a direção pode ganhar voz e forma?</h3><p>Organize promessa, personalidade, linguagem e território visual como hipóteses para revisar. O BRANDSMITH ainda não gera uma identidade automaticamente.</p></div><button className="primary-button" onClick={() => { setExpressionProject(activeProject.id); setDraftExpression({ ...emptyExpression, ...directionNotes[activeProject.id] }) }}>Explorar expressão <ArrowRight size={15} /></button></div>}
+              {['Direção em elaboração', 'Direção para revisar', 'Expressão em elaboração', 'Expressão para revisar', 'Expressão aprovada'].includes(activeProject.stage) && <div className="interpretation-entry expression-entry"><div><span className="mini-label">ETAPA 04 · EXPRESSAR</span><h3>Como a direção pode ganhar voz e forma?</h3><p>Organize promessa, personalidade, linguagem e território visual como hipóteses para revisar. O BRANDSMITH ainda não gera uma identidade automaticamente.</p></div><button className="primary-button" onClick={() => { setExpressionProject(activeProject.id); setDraftExpression({ ...emptyExpression, ...directionNotes[activeProject.id] }) }}>Explorar expressão <ArrowRight size={15} /></button></div>}
+              {['Expressão para revisar', 'Expressão aprovada'].includes(activeProject.stage) && (() => {
+                const expression = directionNotes[activeProject.id] || emptyDirection
+                const fields = [
+                  ['Promessa da marca', expression.brandPromise],
+                  ['Personalidade', expression.personality],
+                  ['Princípios de voz', expression.voicePrinciples],
+                  ['Território visual', expression.visualTerritory],
+                  ['O que evitar', expression.avoidances],
+                  ['Critérios de validação', expression.expressionValidation],
+                ] as const
+                return <section className="interpretation-entry expression-review" aria-labelledby="expression-review-title">
+                  <div className="eyebrow"><span className="eyebrow-line" />ETAPA 04 · REVISÃO</div>
+                  <h3 id="expression-review-title">{activeProject.stage === 'Expressão aprovada' ? 'Expressão aprovada por você' : 'Revise a expressão antes de aprovar'}</h3>
+                  <p>{activeProject.stage === 'Expressão aprovada' ? 'Esta versão foi explicitamente aprovada. Você ainda pode reabrir e editar a expressão se a direção mudar.' : 'Leia cada dimensão e confirme se ela representa a direção que você quer explorar. Campos vazios continuam identificados como não definidos.'}</p>
+                  <div className="expression-review-grid">{fields.map(([label, value]) => <article key={label} className="expression-review-item"><span className="mini-label">{label}</span><p>{value?.trim() || 'Ainda não definido.'}</p></article>)}</div>
+                  <div className="investigation-actions">
+                    <button className="secondary-button" onClick={() => { setExpressionProject(activeProject.id); setDraftExpression({ ...emptyExpression, ...expression }) }}>Editar expressão</button>
+                    {activeProject.stage === 'Expressão para revisar' && <button className="primary-button" onClick={() => {
+                      const current = directionNotes[activeProject.id] || emptyDirection
+                      if (!Object.values(current).some(value => typeof value === 'string' && value.trim())) {
+                        setNotice('Registre pelo menos uma dimensão da expressão antes de aprová-la.')
+                        return
+                      }
+                      const nextDirections = { ...directionNotes, [activeProject.id]: { ...current, expressionApproved: true } }
+                      if (!saveExpressionChanges(activeProject.id, 'Expressão aprovada', nextDirections)) return
+                      setNotice('Expressão aprovada e salva no projeto. Isso registra sua decisão, mas não gera automaticamente uma identidade visual.')
+                    }}>Aprovar expressão <Check size={16} /></button>}
+                    {activeProject.stage === 'Expressão aprovada' && <span className="stage-state"><Check size={14} /> Aprovação registrada</span>}
+                  </div>
+                </section>
+              })()}
               <div className="export-brief-row"><div><span className="mini-label">SEU TRABALHO, FORA DO APP</span><p>Exporte as respostas, notas e hipóteses reunidas em um dossiê editável.</p></div><button className="secondary-button" onClick={() => exportProjectBrief(activeProject)}><FileText size={16} /> Exportar dossiê (.md)</button></div>
               <div className="section-heading"><div><span className="mini-label">O PROCESSO</span><h2>Um caminho, não uma fórmula.</h2></div><span className="section-aside">04 ETAPAS · VOCÊ VALIDA CADA UMA</span></div>
-              <div className="stage-list">{stages.map((stage, index) => { const Icon = stage.icon; const currentStageIndex = ['Ponto de partida', 'Investigação para revisar'].includes(activeProject.stage) ? 0 : activeProject.stage === 'Investigação concluída' ? 1 : ['Interpretação em revisão', 'Interpretação validada'].includes(activeProject.stage) ? 2 : ['Direção em elaboração', 'Direção para revisar'].includes(activeProject.stage) ? 2 : ['Expressão em elaboração', 'Expressão para revisar'].includes(activeProject.stage) ? 3 : 0; const isCurrentStage = index === currentStageIndex; const isReviewStage = isCurrentStage && activeProject.stage.endsWith('para revisar'); const stageState = index < currentStageIndex ? 'Concluída' : index > currentStageIndex ? 'Aguardando' : isReviewStage ? 'Para revisar' : activeProject.stage === 'Ponto de partida' ? 'Próxima etapa' : 'Em andamento'; return <div className="stage-row" key={stage.number}><span className="stage-number">{stage.number}</span><div className="stage-icon"><Icon size={18} /></div><div className="stage-copy"><h3>{stage.name}</h3><p>{stage.detail}</p></div><span className="stage-state">{stageState}</span><ArrowDownRight className="stage-arrow" size={17} /></div> })}</div>
+              <div className="stage-list">{stages.map((stage, index) => { const Icon = stage.icon; const currentStageIndex = ['Ponto de partida', 'Investigação para revisar'].includes(activeProject.stage) ? 0 : activeProject.stage === 'Investigação concluída' ? 1 : ['Interpretação em revisão', 'Interpretação validada'].includes(activeProject.stage) ? 2 : ['Direção em elaboração', 'Direção para revisar'].includes(activeProject.stage) ? 2 : ['Expressão em elaboração', 'Expressão para revisar', 'Expressão aprovada'].includes(activeProject.stage) ? 3 : 0; const isCurrentStage = index === currentStageIndex; const isReviewStage = isCurrentStage && activeProject.stage.endsWith('para revisar'); const stageState = index < currentStageIndex ? 'Concluída' : index > currentStageIndex ? 'Aguardando' : isReviewStage ? 'Para revisar' : activeProject.stage === 'Ponto de partida' ? 'Próxima etapa' : 'Em andamento'; return <div className="stage-row" key={stage.number}><span className="stage-number">{stage.number}</span><div className="stage-icon"><Icon size={18} /></div><div className="stage-copy"><h3>{stage.name}</h3><p>{stage.detail}</p></div><span className="stage-state">{stageState}</span><ArrowDownRight className="stage-arrow" size={17} /></div> })}</div>
               <div className="notice-inline"><Check size={16} />As decisões estratégicas só serão consolidadas depois de investigadas e validadas por você.</div>
             </section>
           ) : (

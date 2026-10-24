@@ -681,7 +681,7 @@ function Workspace({ userId }: { userId?: string }) {
                 <div className="backup-actions"><button className="secondary-button" onClick={exportBackup}><Download size={15} /> Exportar backup</button><label className="secondary-button backup-import"><Upload size={15} /> Importar backup<input type="file" accept="application/json,.json" onChange={importBackup} /></label></div>
                 <div className="project-toolbar"><div className="search-box"><Search size={16} /><input aria-label="Buscar projetos" placeholder="Buscar projetos..." value={search} onChange={(event) => setSearch(event.target.value)} /><kbd><Command size={11} /> K</kbd></div><span className="sort-label">ORDENADOS POR ATIVIDADE <ChevronDown size={13} /></span></div>
                 <div className="project-grid">
-                  {filteredProjects.map((project, index) => (
+                  {filteredProjects.map((project) => (
                     <button className={`project-card ${project.color}`} key={project.id} onClick={() => setSelectedProject(project.id)}>
                       <div className="project-card-top"><span className="project-type">{project.category}</span><span className="card-arrow"><ArrowUpRightIcon /></span></div>
                       <div className="project-art"><span className="art-grid" /><span className="art-word">{project.name.split(' ').slice(0, 2).join(' ').toUpperCase()}<span>.</span></span><span className="art-mark">✳</span></div>

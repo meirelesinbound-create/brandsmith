@@ -431,7 +431,6 @@ function Workspace({ userId }: { userId?: string }) {
       // Snapshot local values so a failed cloud restore can roll back local writes.
       const localKeys = ['brandsmith.projects', 'brandsmith.investigations', 'brandsmith.interpretations', 'brandsmith.directions']
       const localSnapshot = new Map(localKeys.map(key => [key, localStorage.getItem(key)]))
-      let cloudRestoreStarted = false
 
       // For signed-in users, merge the backup with cloud projects rather than
       // letting old cloud rows reappear on the next login after a local restore.

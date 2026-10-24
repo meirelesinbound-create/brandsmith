@@ -219,11 +219,15 @@ function Workspace({ userId }: { userId?: string }) {
           setCloudError('Não foi possível migrar os dados locais. Eles continuam neste navegador; confira a migração e as políticas do Supabase.')
         } else {
           setProjects(migrated); setInvestigations(answers); setInterpretationNotes(interpretations); setDirectionNotes(directions)
-          localStorage.setItem('brandsmith.projects', JSON.stringify(migrated))
-          localStorage.setItem('brandsmith.investigations', JSON.stringify(answers))
-          localStorage.setItem('brandsmith.interpretations', JSON.stringify(interpretations))
-          localStorage.setItem('brandsmith.directions', JSON.stringify(directions))
-          setNotice('Projetos e registros deste navegador foram transferidos para sua conta.')
+          try {
+            localStorage.setItem('brandsmith.projects', JSON.stringify(migrated))
+            localStorage.setItem('brandsmith.investigations', JSON.stringify(answers))
+            localStorage.setItem('brandsmith.interpretations', JSON.stringify(interpretations))
+            localStorage.setItem('brandsmith.directions', JSON.stringify(directions))
+            setNotice('Projetos e registros deste navegador foram transferidos para sua conta.')
+          } catch {
+            setNotice('Os projetos foram transferidos para sua conta, mas o navegador não conseguiu atualizar a cópia local. Confira o espaço disponível no armazenamento deste navegador.')
+          }
         }
       }
       if (!cancelled) setCloudReady(true)

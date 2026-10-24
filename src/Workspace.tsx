@@ -428,6 +428,11 @@ function Workspace({ userId }: { userId?: string }) {
       let restoredInterpretations = nextInterpretations
       let restoredDirections = nextDirections
 
+      // Snapshot local values so a failed cloud restore can roll back local writes.
+      const localKeys = ['brandsmith.projects', 'brandsmith.investigations', 'brandsmith.interpretations', 'brandsmith.directions']
+      const localSnapshot = new Map(localKeys.map(key => [key, localStorage.getItem(key)]))
+      let cloudRestoreStarted = false
+
       // For signed-in users, merge the backup with cloud projects rather than
       // letting old cloud rows reappear on the next login after a local restore.
       if (userId && supabase) {
@@ -446,6 +451,28 @@ function Workspace({ userId }: { userId?: string }) {
         restoredInterpretations = { ...Object.fromEntries(cloudProjects.filter(row => !backupIds.has(row.id)).map(row => [row.id, row.interpretation_notes || ''])), ...nextInterpretations }
         restoredDirections = { ...Object.fromEntries(cloudProjects.filter(row => !backupIds.has(row.id)).map(row => [row.id, row.direction_notes || { opportunity: '', tension: '', distinction: '', validation: '' }])), ...nextDirections }
 
+      }
+
+      // Write local records first. If storage fails, the cloud remains untouched.
+      try {
+        localStorage.setItem('brandsmith.projects', JSON.stringify(restoredProjects))
+        localStorage.setItem('brandsmith.investigations', JSON.stringify(restoredInvestigations))
+        localStorage.setItem('brandsmith.interpretations', JSON.stringify(restoredInterpretations))
+        localStorage.setItem('brandsmith.directions', JSON.stringify(restoredDirections))
+      } catch {
+        localKeys.forEach(key => {
+          const previous = localSnapshot.get(key)
+          try {
+            if (previous === null || previous === undefined) localStorage.removeItem(key)
+            else localStorage.setItem(key, previous)
+          } catch { /* Best-effort rollback when browser storage is unavailable. */ }
+        })
+        throw new Error('Não foi possível gravar o backup neste navegador. A conta na nuvem não foi alterada; libere espaço e tente novamente.')
+      }
+
+      // Only mutate cloud after local storage has accepted the backup. Roll back
+      // the local snapshot if the cloud rejects the restore.
+      if (userId && supabase) {
         const { error: cloudSaveError } = await supabase.from('brand_projects').upsert(
           nextProjects.map(project => ({
             id: project.id, owner_id: userId, name: project.name, category: project.category,
@@ -456,15 +483,17 @@ function Workspace({ userId }: { userId?: string }) {
           })),
           { onConflict: 'id' },
         )
-        if (cloudSaveError) throw new Error('Não foi possível restaurar o backup na conta. Os dados atuais não foram substituídos; tente novamente.')
+        if (cloudSaveError) {
+          localKeys.forEach(key => {
+            const previous = localSnapshot.get(key)
+            try {
+              if (previous === null || previous === undefined) localStorage.removeItem(key)
+              else localStorage.setItem(key, previous)
+            } catch { /* Best-effort rollback if storage is unavailable. */ }
+          })
+          throw new Error('Não foi possível restaurar o backup na conta. Os dados locais anteriores foram preservados; tente novamente.')
+        }
       }
-
-      // Write all local records before updating React state, so storage errors
-      // do not leave the UI claiming that the restore completed.
-      localStorage.setItem('brandsmith.projects', JSON.stringify(restoredProjects))
-      localStorage.setItem('brandsmith.investigations', JSON.stringify(restoredInvestigations))
-      localStorage.setItem('brandsmith.interpretations', JSON.stringify(restoredInterpretations))
-      localStorage.setItem('brandsmith.directions', JSON.stringify(restoredDirections))
       setProjects(restoredProjects)
       setInvestigations(restoredInvestigations)
       setInterpretationNotes(restoredInterpretations)

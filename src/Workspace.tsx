@@ -472,7 +472,7 @@ function Workspace({ userId }: { userId?: string }) {
         Object.values(backup.investigations).every(value => Array.isArray(value) && value.every(answer => typeof answer === 'string'))
       const validInterpretations = validRecord(backup.interpretations) &&
         Object.values(backup.interpretations).every(value => typeof value === 'string')
-      const directionFields = ['opportunity', 'tension', 'distinction', 'validation', 'brandPromise', 'personality', 'voicePrinciples', 'visualTerritory', 'avoidances', 'expressionValidation']
+      const directionFields = ['opportunity', 'tension', 'distinction', 'validation', 'brandPromise', 'personality', 'voicePrinciples', 'visualTerritory', 'avoidances', 'expressionValidation', 'expressionApproved']
       const validDirections = validRecord(backup.directions) &&
         Object.values(backup.directions).every(value => validRecord(value) &&
           Object.entries(value).every(([key, field]) => directionFields.includes(key) &&

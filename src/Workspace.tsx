@@ -169,7 +169,13 @@ function Workspace({ userId }: { userId?: string }) {
           )
           if (cancelled) return
           if (localMigrationError) {
-            setCloudError('Alguns projetos deste navegador ainda não foram transferidos. Os dados locais foram mantidos; verifique a conexão e tente novamente.')
+            // Show the account's cloud data even when migrating browser-only projects fails.
+            // Keep local-only projects in browser storage for a later retry.
+            setProjects(nextProjects)
+            setInvestigations(Object.fromEntries(rows.map(row => [row.id, Array.isArray(row.investigation_answers) ? row.investigation_answers : []])))
+            setInterpretationNotes(Object.fromEntries(rows.map(row => [row.id, row.interpretation_notes || ''])))
+            setDirectionNotes(Object.fromEntries(rows.map(row => [row.id, row.direction_notes || { opportunity: '', tension: '', distinction: '', validation: '' }])) as Record<string, DirectionDraft>)
+            setCloudError('Alguns projetos deste navegador ainda não foram transferidos. Os dados locais foram mantidos; os projetos da conta estão exibidos. Verifique a conexão e tente novamente.')
             setCloudReady(true)
             return
           }

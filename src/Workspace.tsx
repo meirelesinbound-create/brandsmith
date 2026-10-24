@@ -475,7 +475,8 @@ function Workspace({ userId }: { userId?: string }) {
       const directionFields = ['opportunity', 'tension', 'distinction', 'validation', 'brandPromise', 'personality', 'voicePrinciples', 'visualTerritory', 'avoidances', 'expressionValidation']
       const validDirections = validRecord(backup.directions) &&
         Object.values(backup.directions).every(value => validRecord(value) &&
-          Object.entries(value).every(([key, field]) => directionFields.includes(key) && typeof field === 'string'))
+          Object.entries(value).every(([key, field]) => directionFields.includes(key) &&
+            (key === 'expressionApproved' ? typeof field === 'boolean' : typeof field === 'string')))
       const relatedIds = [
         ...Object.keys(validRecord(backup.investigations) ? backup.investigations : {}),
         ...Object.keys(validRecord(backup.interpretations) ? backup.interpretations : {}),

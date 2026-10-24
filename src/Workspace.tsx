@@ -129,12 +129,59 @@ function Workspace({ userId }: { userId?: string }) {
           nextInterpretations[row.id] = row.interpretation_notes || ''
           nextDirections[row.id] = row.direction_notes || { opportunity: '', tension: '', distinction: '', validation: '' }
         })
-        setProjects(nextProjects); setInvestigations(nextInvestigations)
+
+        // Preserve projects that exist only in this browser instead of replacing them
+        // with the cloud list. Their IDs and related notes are migrated together.
+        const localProjects = (() => {
+          try { return JSON.parse(localStorage.getItem('brandsmith.projects') || '[]') as Project[] } catch { return [] }
+        })()
+        const localInvestigations = (() => {
+          try { return JSON.parse(localStorage.getItem('brandsmith.investigations') || '{}') as Record<string, string[]> } catch { return {} }
+        })()
+        const localInterpretations = (() => {
+          try { return JSON.parse(localStorage.getItem('brandsmith.interpretations') || '{}') as Record<string, string> } catch { return {} }
+        })()
+        const localDirections = (() => {
+          try { return JSON.parse(localStorage.getItem('brandsmith.directions') || '{}') as Record<string, DirectionDraft> } catch { return {} }
+        })()
+        const cloudIds = new Set(nextProjects.map(project => project.id))
+        const localOnly = (Array.isArray(localProjects) ? localProjects : []).filter(project => !cloudIds.has(project.id))
+        const migratedLocal = localOnly.map(project => {
+          const id = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(project.id) ? project.id : crypto.randomUUID()
+          nextInvestigations[id] = localInvestigations[project.id] || []
+          nextInterpretations[id] = localInterpretations[project.id] || ''
+          nextDirections[id] = localDirections[project.id] || { opportunity: '', tension: '', distinction: '', validation: '' }
+          return { ...project, id }
+        })
+        if (migratedLocal.length) {
+          const { error: localMigrationError } = await supabase!.from('brand_projects').upsert(
+            migratedLocal.map(project => ({
+              id: project.id, owner_id: userId, name: project.name, category: project.category,
+              stage: project.stage, color: project.color || 'lime',
+              investigation_answers: nextInvestigations[project.id],
+              interpretation_notes: nextInterpretations[project.id],
+              direction_notes: nextDirections[project.id],
+            })),
+            { onConflict: 'id' },
+          )
+          if (cancelled) return
+          if (localMigrationError) {
+            setCloudError('Alguns projetos deste navegador ainda não foram transferidos. Os dados locais foram mantidos; verifique a conexão e tente novamente.')
+            setCloudReady(true)
+            return
+          }
+        }
+        const allProjects = [...nextProjects, ...migratedLocal]
+        setProjects(allProjects); setInvestigations(nextInvestigations)
         setInterpretationNotes(nextInterpretations); setDirectionNotes(nextDirections)
-        localStorage.setItem('brandsmith.projects', JSON.stringify(nextProjects))
-        localStorage.setItem('brandsmith.investigations', JSON.stringify(nextInvestigations))
-        localStorage.setItem('brandsmith.interpretations', JSON.stringify(nextInterpretations))
-        localStorage.setItem('brandsmith.directions', JSON.stringify(nextDirections))
+        try {
+          localStorage.setItem('brandsmith.projects', JSON.stringify(allProjects))
+          localStorage.setItem('brandsmith.investigations', JSON.stringify(nextInvestigations))
+          localStorage.setItem('brandsmith.interpretations', JSON.stringify(nextInterpretations))
+          localStorage.setItem('brandsmith.directions', JSON.stringify(nextDirections))
+        } catch {
+          setNotice('Os projetos foram carregados da conta, mas não foi possível atualizar a cópia deste navegador.')
+        }
       } else {
         // First cloud login: migrate this browser's existing projects and related notes.
         const localProjects = (() => { try { return JSON.parse(localStorage.getItem('brandsmith.projects') || 'null') as Project[] | null } catch { return null } })()

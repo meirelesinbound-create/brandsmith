@@ -613,7 +613,7 @@ function Workspace({ userId }: { userId?: string }) {
                       <div className="project-card-top"><span className="project-type">{project.category}</span><span className="card-arrow"><ArrowUpRightIcon /></span></div>
                       <div className="project-art"><span className="art-grid" /><span className="art-word">{index === 0 ? <>CADÊ O<br />ROTEIRISTA<span>?</span></> : <>{project.name.split(' ').slice(0, 2).join(' ').toUpperCase()}<span>.</span></>}</span><span className="art-mark">✳</span></div>
                       <div className="project-card-bottom"><div><h3>{project.name}</h3><p>{project.stage}</p></div><span className="card-open"><ArrowRight size={17} /></span></div>
-                      <div className="card-progress"><span style={{ width: project.stage === 'Investigação concluída' ? '26%' : '5%' }} /></div>
+                      <div className="card-progress"><span style={{ width: ({ 'Ponto de partida': '5%', 'Investigação para revisar': '20%', 'Investigação concluída': '25%', 'Interpretação em revisão': '45%', 'Interpretação validada': '50%', 'Direção em elaboração': '65%', 'Direção para revisar': '75%', 'Expressão em elaboração': '85%', 'Expressão para revisar': '95%' } as Record<string, string>)[project.stage] || '5%' }} /></div>
                     </button>
                   ))}
                   <button className="new-project-card" onClick={() => setShowCreate(true)}><span className="new-project-icon"><Plus size={22} /></span><strong>Uma ideia nova?</strong><span>Comece um projeto do zero.</span><span className="new-project-cta">Criar projeto <ArrowRight size={15} /></span></button>

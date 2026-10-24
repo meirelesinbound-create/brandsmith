@@ -257,13 +257,15 @@ function Workspace({ userId }: { userId?: string }) {
     [projects, search],
   )
 
-  function saveProjects(next: Project[]) {
-    setProjects(next)
+  function saveProjects(next: Project[]): boolean {
     try {
       localStorage.setItem('brandsmith.projects', JSON.stringify(next))
     } catch {
-      setNotice('Não foi possível salvar neste navegador.')
+      setNotice('Não foi possível salvar o projeto neste navegador. Libere espaço ou habilite o armazenamento e tente novamente.')
+      return false
     }
+    setProjects(next)
+    return true
   }
 
   function createProject(event: React.FormEvent<HTMLFormElement>) {
@@ -278,7 +280,7 @@ function Workspace({ userId }: { userId?: string }) {
       updated: 'Criado agora',
       color: 'lime',
     }
-    saveProjects([project, ...projects])
+    if (!saveProjects([project, ...projects])) return
     setProjectName('')
     setCategory('')
     setShowCreate(false)

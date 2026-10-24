@@ -449,10 +449,18 @@ function Workspace({ userId }: { userId?: string }) {
         throw new Error('O backup está incompleto ou contém dados inconsistentes. Nenhum dado foi alterado.')
       }
       if (!window.confirm('Importar este backup substituirá os projetos e dados salvos neste navegador. Exporte um backup atual antes de continuar, se quiser preservá-lo. Deseja continuar?')) return
-      const nextProjects = backup.projects as Project[]
-      const nextInvestigations = backup.investigations as Record<string, string[]>
-      const nextInterpretations = backup.interpretations as Record<string, string>
-      const nextDirections = backup.directions as Record<string, DirectionDraft>
+      const sourceProjects = backup.projects as Project[]
+      const sourceInvestigations = backup.investigations as Record<string, string[]>
+      const sourceInterpretations = backup.interpretations as Record<string, string>
+      const sourceDirections = backup.directions as Record<string, DirectionDraft>
+      const isUuid = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)
+      const idMap = new Map(sourceProjects.map(project => [project.id, isUuid(project.id) ? project.id : crypto.randomUUID()]))
+      const nextProjects = sourceProjects.map(project => ({ ...project, id: idMap.get(project.id)! }))
+      const remapRecords = <T,>(records: Record<string, T>): Record<string, T> =>
+        Object.fromEntries(Object.entries(records).map(([id, value]) => [idMap.get(id) || id, value]))
+      const nextInvestigations = remapRecords(sourceInvestigations)
+      const nextInterpretations = remapRecords(sourceInterpretations)
+      const nextDirections = remapRecords(sourceDirections)
       let restoredProjects = nextProjects
       let restoredInvestigations = nextInvestigations
       let restoredInterpretations = nextInterpretations

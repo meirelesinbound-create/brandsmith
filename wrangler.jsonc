@@ -1,8 +1,14 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "brandsmith",
+  "main": "worker/index.ts",
   "compatibility_date": "2026-10-24",
+  "ai": {
+    "binding": "AI"
+  },
   "assets": {
-    "directory": "./dist"
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
   }
 }

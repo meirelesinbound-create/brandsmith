@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from './lib/supabase'
+import { BrandMark } from './components/BrandMark'
 import {
   ArrowDownRight, ArrowRight, Atom, Check, ChevronDown, CircleHelp,
   Command, Download, FileText, FolderOpen, Lightbulb, Menu, Plus, Search, Upload,
@@ -653,7 +654,7 @@ function Workspace({ userId }: { userId?: string }) {
     <div className="app-shell">
       <aside className="sidebar">
         <a className="brand-lockup" href="#" onClick={(event) => { event.preventDefault(); setSelectedProject(null); setActiveNav('Projetos') }} aria-label="BRANDSMITH início">
-          <span className="brand-symbol">B<span>✳</span></span>
+          <BrandMark size={30} />
           <span className="brand-word">BRANDSMITH<span className="brand-period">.</span></span>
         </a>
         <div className="workspace-label">ESPAÇO DE TRABALHO <ChevronDown size={13} /></div>

@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { ArrowRight, Eye, EyeOff, LoaderCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { BrandMark } from './BrandMark'
 
 type AuthScreenProps = {
   onAuthenticated: (session: Session | null) => void
@@ -49,7 +50,7 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
   return (
     <main className="auth-screen">
       <section className="auth-panel" aria-labelledby="auth-title">
-        <span className="auth-brand">BRANDSMITH<span>.</span></span>
+        <div className="auth-brand-lockup"><BrandMark size={38} /><span className="auth-brand">BRANDSMITH<span>.</span></span></div>
         <div className="auth-eyebrow"><span /> ESPAÇO CRIATIVO PESSOAL</div>
         <h1 id="auth-title">{mode === 'signin' ? <>Seu próximo projeto<br /><em>começa aqui.</em></> : <>Abra seu espaço<br /><em>de criação.</em></>}</h1>
         <p className="auth-intro">Entre para continuar explorando ideias, investigar oportunidades e construir marcas com personalidade própria.</p>

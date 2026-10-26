@@ -27,7 +27,7 @@ const stages = [
   { number: '04', name: 'Expressar', detail: 'Transformar direção em linguagem e identidade', icon: Lightbulb },
 ]
 
-type DirectionDraft = { opportunity: string; tension: string; distinction: string; validation: string; brandPromise?: string; personality?: string; voicePrinciples?: string; visualTerritory?: string; avoidances?: string; expressionValidation?: string; expressionApproved?: boolean }
+type DirectionDraft = { opportunity: string; tension: string; distinction: string; validation: string; brandPromise?: string; personality?: string; voicePrinciples?: string; visualTerritory?: string; avoidances?: string; expressionValidation?: string; expressionApproved?: boolean; identityGenerated?: boolean }
 type CloudProject = { id: string; name: string; category: string; stage: string; color: string; investigation_answers: string[]; interpretation_notes: string; direction_notes: DirectionDraft; updated_at?: string }
 
 function Workspace({ userId }: { userId?: string }) {
@@ -68,6 +68,7 @@ function Workspace({ userId }: { userId?: string }) {
   const [directionNotes, setDirectionNotes] = useState<Record<string, DirectionDraft>>(() => { try { return JSON.parse(localStorage.getItem('brandsmith.directions') || '{}') as Record<string, DirectionDraft> } catch { return {} } })
   const [draftDirection, setDraftDirection] = useState<DirectionDraft>(emptyDirection)
   const [expressionProject, setExpressionProject] = useState<string | null>(null)
+  const [identityProject, setIdentityProject] = useState<string | null>(null)
   const emptyExpression = { brandPromise: '', personality: '', voicePrinciples: '', visualTerritory: '', avoidances: '', expressionValidation: '' }
   const [draftExpression, setDraftExpression] = useState(emptyExpression)
   const investigationQuestions = [
@@ -711,11 +712,20 @@ function Workspace({ userId }: { userId?: string }) {
                       }
                       const nextDirections = { ...directionNotes, [activeProject.id]: { ...current, expressionApproved: true } }
                       if (!saveExpressionChanges(activeProject.id, 'Expressão aprovada', nextDirections)) return
-                      setNotice('Expressão aprovada e salva no projeto. Isso registra sua decisão, mas não gera automaticamente uma identidade visual.')
+                      setNotice('Expressão aprovada. A próxima etapa é construir a primeira proposta de identidade visual.')
                     }}>Aprovar expressão <Check size={16} /></button>}
                     {activeProject.stage === 'Expressão aprovada' && <span className="stage-state"><Check size={14} /> Aprovação registrada</span>}
                   </div>
                 </section>
+              })()}
+              {activeProject.stage === 'Expressão aprovada' && <div className="interpretation-entry identity-entry"><div><span className="mini-label">PRÓXIMA ETAPA · IDENTIDADE VISUAL</span><h3>Transforme a expressão aprovada em uma primeira direção visual.</h3><p>O BRANDSMITH organiza uma proposta inicial de paleta, tipografia, formas e aplicações a partir das decisões do projeto. Você poderá revisar antes de considerar qualquer escolha definitiva.</p></div><button className="primary-button" onClick={() => setIdentityProject(activeProject.id)}><Sparkles size={16} />  Construir identidade visual <ArrowRight size={15} /></button></div>}
+              {identityProject === activeProject.id && (() => {
+                const identity = directionNotes[activeProject.id] || emptyDirection
+                const palette = identity.visualTerritory?.toLowerCase().includes('verde') || identity.personality?.toLowerCase().includes('ousad') 
+                  ? [{name:'Carvão',hex:'#111111'},{name:'Lima',hex:'#D7FF38'},{name:'Papel',hex:'#F2F0E9'},{name:'Cinza',hex:'#777777'}]
+                  : [{name:'Tinta',hex:'#171717'},{name:'Marfim',hex:'#F3EFE5'},{name:'Sinal',hex:'#D7FF38'},{name:'Acento',hex:'#7A8F78'}]
+                const title = activeProject.name.trim() || 'Nova marca'
+                return <div className="modal-backdrop investigation-backdrop"><section className="investigation-modal identity-modal" role="dialog" aria-modal="true" aria-labelledby="identity-title"><div className="investigation-top"><span className="mini-label">ETAPA 04 · PRIMEIRA PROPOSTA VISUAL</span><button className="icon-button" onClick={() => setIdentityProject(null)} aria-label="Fechar proposta visual"><X size={18} /></button></div><div className="eyebrow"><span className="eyebrow-line" />DIREÇÃO VISUAL PARA REVISÃO</div><h2 id="identity-title">Uma identidade começa por escolhas<span className="lime-period">.</span></h2><p className="investigation-prompt">Esta é uma primeira composição conceitual baseada no que foi registrado — não um logotipo final nem uma identidade validada por pesquisa. Revise os códigos antes de avançar.</p><div className="identity-board"><div className="identity-board-top"><span>BRANDSMITH / CONCEPT 01</span><span>VISUAL STUDY</span></div><div className="identity-board-hero" style={{background:palette[0].hex,color:palette[1].hex}}><span className="identity-mark">✳</span><strong>{title.toUpperCase()}</strong><small>{identity.brandPromise?.trim() || identity.distinction?.trim() || 'Uma proposta em busca de expressão própria.'}</small></div><div className="identity-swatches">{palette.map(color => <div className="identity-swatch" key={color.hex}><span style={{background:color.hex}} /><strong>{color.name}</strong><code>{color.hex}</code></div>)}</div><div className="identity-type-sample"><span className="mini-label">TIPOGRAFIA · DIREÇÃO SUGERIDA</span><strong>Forma com intenção.</strong><p>Título expressivo e condensado + sans-serif contemporânea para leitura. A seleção de fontes finais ainda precisa ser validada.</p></div><div className="identity-board-notes"><div><span className="mini-label">PERSONALIDADE</span><p>{identity.personality?.trim() || 'Ainda precisa ser definida com mais precisão.'}</p></div><div><span className="mini-label">TERRITÓRIO VISUAL</span><p>{identity.visualTerritory?.trim() || 'Contraste editorial e uma cor de acento como hipótese inicial.'}</p></div><div><span className="mini-label">EVITAR</span><p>{identity.avoidances?.trim() || 'Códigos genéricos ainda não mapeados.'}</p></div></div></div><div className="investigation-actions"><button className="secondary-button" onClick={() => setIdentityProject(null)}>Continuar depois</button><button className="primary-button" onClick={() => { const next = { ...directionNotes, [activeProject.id]: { ...identity, identityGenerated: true } }; if (!saveExpressionChanges(activeProject.id, 'Expressão aprovada', next)) return; setIdentityProject(null); setNotice('Primeira proposta visual salva no projeto. Ela é um ponto de partida editável, não uma identidade final validada.') }}><Check size={15} /> Salvar proposta no projeto</button></div></section></div>
               })()}
               <div className="export-brief-row"><div><span className="mini-label">SEU TRABALHO, FORA DO APP</span><p>Exporte as respostas, notas e hipóteses reunidas em um dossiê editável.</p></div><button className="secondary-button" onClick={() => exportProjectBrief(activeProject)}><FileText size={16} /> Exportar dossiê (.md)</button></div>
               <div className="section-heading"><div><span className="mini-label">O PROCESSO</span><h2>Um caminho, não uma fórmula.</h2></div><span className="section-aside">04 ETAPAS · VOCÊ VALIDA CADA UMA</span></div>

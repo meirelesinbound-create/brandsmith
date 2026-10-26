@@ -412,3 +412,29 @@ body,button,input,textarea{font-family:var(--body)}
 .expression-modal .investigation-actions{flex-wrap:wrap;justify-content:flex-end}
 .expression-modal .primary-button:disabled{opacity:.45;cursor:not-allowed}
 @media(max-width:600px){.expression-fields{grid-template-columns:1fr}.expression-modal .investigation-actions{flex-direction:column-reverse}.expression-modal .investigation-actions button{width:100%;justify-content:center}}
+
+
+/* First visual identity proposal */
+.identity-entry { border-color: rgba(215, 255, 56, .35); }
+.identity-modal { width: min(860px, calc(100vw - 32px)); max-height: 90vh; overflow-y: auto; }
+.identity-board { margin: 24px 0; padding: 18px; background: #f2f0e9; color: #111; border: 1px solid rgba(17,17,17,.12); }
+.identity-board-top { display:flex; justify-content:space-between; gap:12px; font: 10px/1.4 monospace; letter-spacing:.12em; margin-bottom:14px; }
+.identity-board-hero { min-height:220px; padding:28px; display:flex; flex-direction:column; justify-content:center; align-items:flex-start; gap:12px; overflow:hidden; }
+.identity-mark { font-size:42px; line-height:1; }
+.identity-board-hero strong { font-size:clamp(26px,5vw,52px); line-height:.95; letter-spacing:-.045em; overflow-wrap:anywhere; }
+.identity-board-hero small { max-width:520px; font-size:13px; line-height:1.5; }
+.identity-swatches { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin:18px 0; }
+.identity-swatch { min-width:0; display:flex; flex-direction:column; gap:6px; font-size:12px; }
+.identity-swatch > span { height:58px; border:1px solid rgba(17,17,17,.15); }
+.identity-swatch code { font-size:10px; }
+.identity-type-sample { padding:22px 0; border-top:1px solid rgba(17,17,17,.2); border-bottom:1px solid rgba(17,17,17,.2); }
+.identity-type-sample > strong { display:block; margin:12px 0 8px; font-size:clamp(28px,5vw,48px); line-height:1; letter-spacing:-.04em; }
+.identity-type-sample p, .identity-board-notes p { font-size:13px; line-height:1.6; }
+.identity-board-notes { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; padding-top:18px; }
+.identity-board-notes p { overflow-wrap:anywhere; }
+@media (max-width: 600px) {
+  .identity-swatches { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .identity-board-notes { grid-template-columns:1fr; gap:8px; }
+  .identity-board { padding:12px; }
+  .identity-board-hero { min-height:180px; padding:20px; }
+}

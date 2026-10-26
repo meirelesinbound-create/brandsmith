@@ -476,3 +476,72 @@ body,button,input,textarea{font-family:var(--body)}
 .identity-poster>span:nth-of-type(2){font-size:42px;margin-top:20px}
 .identity-poster h3{font-size:clamp(32px,4vw,50px)}
 @media(max-width:720px){.identity-detail-grid,.identity-applications{grid-template-columns:1fr}.identity-modal-expanded{width:calc(100vw - 16px);max-height:calc(100vh - 12px)}.identity-application-card{min-height:230px}.identity-pages button{padding:9px 10px}.identity-board-notes{grid-template-columns:1fr!important}}
+
+
+/* BRANDSMITH identity restoration — Ruptura Editorial / approved Proposal 02 */
+:root {
+  --black: #111111;
+  --lime: #D7FF38;
+  --paper: #F2F0E9;
+  --gray: #777777;
+  --line: rgba(242, 240, 233, .18);
+  --display: 'Barlow Condensed', Impact, sans-serif;
+}
+.brand-symbol { filter: none; }
+.brand-wordmark, .auth-brand {
+  font-family: 'Barlow Condensed', Impact, sans-serif;
+  font-weight: 800;
+  letter-spacing: -.035em;
+  text-transform: uppercase;
+}
+.brand-wordmark {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  font-size: 21px;
+  line-height: .9;
+  letter-spacing: -.025em;
+}
+.brand-wordmark .brand-wordmark-cut {
+  display: inline-block;
+  width: 5px;
+  height: .95em;
+  margin-left: 4px;
+  background: var(--lime);
+  transform: skew(-25deg);
+  transform-origin: center;
+}
+.brand-wordmark.compact { font-size: 15px; }
+.auth-brand { font-size: clamp(28px, 3vw, 38px); letter-spacing: -.04em; }
+.auth-brand > span { color: var(--lime); }
+.auth-brand-lockup { gap: 16px; }
+.auth-screen {
+  background:
+    linear-gradient(118deg, transparent 0 64%, rgba(215,255,56,.045) 64% 64.2%, transparent 64.2%),
+    var(--black);
+}
+.auth-panel { position: relative; }
+.auth-panel::after {
+  content: '02 / RUPTURA EDITORIAL';
+  position: absolute;
+  right: 0;
+  top: 0;
+  color: var(--lime);
+  font: 10px 'IBM Plex Mono', monospace;
+  letter-spacing: .12em;
+}
+h1, h2, h3, .page-title, .section-title, .project-title {
+  font-family: 'Barlow Condensed', Impact, sans-serif;
+  letter-spacing: -.025em;
+}
+button.primary, .primary-button, .btn-primary {
+  background: var(--lime);
+  color: var(--black);
+  border: 1px solid var(--lime);
+  border-radius: 0;
+  font-weight: 800;
+}
+button.primary:hover, .primary-button:hover, .btn-primary:hover {
+  background: var(--paper);
+  border-color: var(--paper);
+}

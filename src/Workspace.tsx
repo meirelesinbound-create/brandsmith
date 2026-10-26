@@ -32,31 +32,30 @@ type DirectionDraft = { opportunity: string; tension: string; distinction: strin
 type CloudProject = { id: string; name: string; category: string; stage: string; color: string; investigation_answers: string[]; interpretation_notes: string; direction_notes: DirectionDraft; updated_at?: string }
 
 
-function exportIdentityLogoSvg(title: string, palette: { hex: string }[], symbol: string) {
-  const safeTitle = title.replace(/[&<>"]/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[character] || character).toUpperCase()
+function exportIdentityLogoSvg(title: string, palette: { hex: string }[], _symbol: string) {
+  const escapeXml = (value: string) => value.replace(/[&<>"]/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[character] || character)
+  const safeTitle = escapeXml(title).toUpperCase()
   const background = palette[0]?.hex || '#111111'
   const foreground = palette[1]?.hex || '#F2F0E9'
   const accent = palette[2]?.hex || '#D7FF38'
-  const mark = symbol.replace(/[&<>"]/g, '')
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="420" viewBox="0 0 1200 420" role="img" aria-labelledby="title desc">
-  <title id="title">${safeTitle} — logotipo</title>
-  <desc id="desc">Proposta vetorial inicial criada no BRANDSMITH. Revise a tipografia e a composição antes de uso comercial.</desc>
+  <title id="title">${safeTitle} — proposta de identidade</title>
+  <desc id="desc">Composição tipográfica BRANDSMITH inspirada na rota Ruptura Editorial: contraste forte, tipografia condensada e corte diagonal de acento.</desc>
   <rect width="1200" height="420" fill="${background}"/>
-  <g transform="translate(92 100)">
-    <rect width="220" height="220" fill="${accent}"/>
-    <path d="M88 0H132V72H88ZM88 104H132V220H88ZM132 72H220V104H132ZM0 104H88V136H0Z" fill="${background}"/>
-    <text x="110" y="155" fill="${foreground}" font-family="Inter,Arial,sans-serif" font-size="1">${mark}</text>
-  </g>
-  <text x="360" y="228" fill="${foreground}" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-size="82" font-weight="800" letter-spacing="1.5">${safeTitle}</text>
-  <rect x="360" y="260" width="112" height="8" fill="${accent}"/>
-  <text x="360" y="310" fill="${foreground}" opacity=".68" font-family="IBM Plex Mono,monospace" font-size="18" letter-spacing="2">PROPOSTA VETORIAL · BRANDSMITH</text>
+  <path d="M0 0H18V420H0Z" fill="${accent}"/>
+  <text x="74" y="78" fill="${accent}" font-family="IBM Plex Mono,monospace" font-size="15" letter-spacing="3">BRANDSMITH / RUPTURA EDITORIAL</text>
+  <text x="70" y="250" fill="${foreground}" font-family="Barlow Condensed,Impact,Arial Narrow,sans-serif" font-size="112" font-weight="800" letter-spacing="-3">${safeTitle}</text>
+  <path d="M610 112H644L570 276H536Z" fill="${accent}"/>
+  <path d="M74 290H1126" stroke="${foreground}" stroke-opacity=".24" stroke-width="1"/>
+  <text x="74" y="344" fill="${foreground}" opacity=".82" font-family="IBM Plex Mono,monospace" font-size="18" letter-spacing="1.5">O ÓBVIO NÃO CRIA MARCAS EXTRAORDINÁRIAS.</text>
+  <text x="1126" y="385" text-anchor="end" fill="${accent}" font-family="IBM Plex Mono,monospace" font-size="12">CONCEITO TIPOGRÁFICO / REVISE ANTES DE USO FINAL</text>
 </svg>`
   const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   const slug = title.normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'marca'
   link.href = url
-  link.download = `brandsmith-logo-${slug}.svg`
+  link.download = `brandsmith-conceito-${slug}.svg`
   document.body.appendChild(link)
   link.click()
   link.remove()

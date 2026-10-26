@@ -22,6 +22,11 @@ export default {
     const token = authorization.startsWith("Bearer ") ? authorization.slice(7).trim() : ""
     if (!token) return json({ error: "Entre na sua conta para usar a análise estratégica." }, 401)
     if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+      // Never log secret values; record only whether each runtime binding is present.
+      console.error("Missing Supabase runtime binding", {
+        hasSupabaseUrl: typeof env.SUPABASE_URL === "string" && env.SUPABASE_URL.length > 0,
+        hasSupabaseAnonKey: typeof env.SUPABASE_ANON_KEY === "string" && env.SUPABASE_ANON_KEY.length > 0,
+      })
       return json({ error: "A integração segura com o Supabase ainda não foi configurada no Worker." }, 503)
     }
 

@@ -1,6 +1,6 @@
 interface Env {
   AI: {
-    run(model: string, input: { messages: Array<{ role: string; content: string }> }): Promise<{ response?: string }>
+    run(model: string, input: { messages: Array<{ role: string; content: string }> }): Promise<unknown>
   }
   ASSETS: { fetch(request: Request): Promise<Response> }
   SUPABASE_URL: string
@@ -83,9 +83,33 @@ export default {
           { role: "user", content: prompt },
         ],
       })
-      const analysis = typeof result.response === "string" ? result.response.trim() : ""
-      if (!analysis) return json({ error: "O modelo não retornou uma análise utilizável. Tente novamente." }, 502)
-      return json({ analysis })
+      const output = result && typeof result === "object" ? result as Record<string, unknown> : {}
+      const choices = Array.isArray(output.choices) ? output.choices : []
+      const firstChoice = choices[0] && typeof choices[0] === "object"
+        ? choices[0] as Record<string, unknown>
+        : {}
+      const message = firstChoice.message && typeof firstChoice.message === "object"
+        ? firstChoice.message as Record<string, unknown>
+        : {}
+      const candidates = [
+        output.response,
+        output.output_text,
+        output.generated_text,
+        message.content,
+        firstChoice.text,
+      ]
+      const analysis = candidates.find(value => typeof value === "string" && value.trim().length > 0)
+      if (typeof analysis !== "string") {
+        console.error("Workers AI returned no usable text", {
+          resultKeys: Object.keys(output),
+          responseType: typeof output.response,
+          responseLength: typeof output.response === "string" ? output.response.length : null,
+          choiceCount: choices.length,
+          finishReason: firstChoice.finish_reason ?? firstChoice.finishReason ?? null,
+        })
+        return json({ error: "O modelo de IA respondeu sem texto. Tente novamente; se persistir, consulte os logs do Worker." }, 502)
+      }
+      return json({ analysis: analysis.trim() })
     } catch (error) {
       // Keep the underlying provider error in Worker logs so configuration/model
       // failures can be diagnosed without exposing internals to the browser.

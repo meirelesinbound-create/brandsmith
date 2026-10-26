@@ -81,8 +81,16 @@ export default {
       const analysis = typeof result.response === "string" ? result.response.trim() : ""
       if (!analysis) return json({ error: "O modelo não retornou uma análise utilizável. Tente novamente." }, 502)
       return json({ analysis })
-    } catch {
-      return json({ error: "A análise por IA falhou. Verifique se o Workers AI está habilitado e tente novamente." }, 502)
+    } catch (error) {
+      // Keep the underlying provider error in Worker logs so configuration/model
+      // failures can be diagnosed without exposing internals to the browser.
+      const details = error instanceof Error
+        ? { name: error.name, message: error.message }
+        : { message: String(error) }
+      console.error("Workers AI strategy request failed", details)
+      return json({
+        error: "A análise por IA falhou ao consultar o modelo. Consulte os logs do Worker para identificar a causa.",
+      }, 502)
     }
   },
 }

@@ -77,7 +77,7 @@ export default {
     ].join("\n\n")
 
     try {
-      const result = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
+      const result = await env.AI.run("@cf/zai-org/glm-4.7-flash", {
         messages: [
           { role: "system", content: "Seja um parceiro estratégico exigente, transparente sobre incerteza e orientado a decisões úteis. Não confunda relato com evidência." },
           { role: "user", content: prompt },

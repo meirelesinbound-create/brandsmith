@@ -62,6 +62,61 @@ function exportIdentityLogoSvg(title: string, palette: { hex: string }[], _symbo
   URL.revokeObjectURL(url)
 }
 
+
+function exportBrandGuide(title: string, category: string, identity: DirectionDraft, palette: { name: string; hex: string }[], typeTitle: string, symbol: string) {
+  const clean = (value?: string) => (value || 'A definir na próxima revisão.').trim()
+  const markdown = [
+    `# Sistema de marca — ${title}`,
+    '',
+    `> Documento de trabalho gerado pelo BRANDSMITH. Status: proposta para revisão; não representa validação de mercado nem aprovação final.`,
+    '',
+    '## 01. Contexto',
+    `- **Marca/projeto:** ${title}`,
+    `- **Categoria:** ${category || 'Não informada'}`,
+    `- **Símbolo provisório de estudo:** ${symbol}`,
+    '',
+    '## 02. Núcleo estratégico',
+    `- **Promessa:** ${clean(identity.brandPromise)}`,
+    `- **Personalidade:** ${clean(identity.personality)}`,
+    `- **Princípios de voz:** ${clean(identity.voicePrinciples)}`,
+    `- **Hipótese de diferenciação:** ${clean(identity.distinction)}`,
+    `- **Oportunidade:** ${clean(identity.opportunity)}`,
+    `- **Tensão a resolver:** ${clean(identity.tension)}`,
+    '',
+    '## 03. Sistema visual proposto',
+    `- **Território visual:** ${clean(identity.visualTerritory)}`,
+    `- **Direção tipográfica:** ${typeTitle}`,
+    '',
+    '| Cor | Função | HEX |',
+    '|---|---|---|',
+    ...palette.map((color, index) => `| ${color.name} | ${['Base e estrutura', 'Respiro e leitura', 'Acento e reconhecimento', 'Apoio e profundidade'][index] || 'Cor complementar'} | ${color.hex} |`),
+    '',
+    '## 04. Princípios de expressão',
+    `- **O que evitar:** ${clean(identity.avoidances)}`,
+    `- **Critérios de validação:** ${clean(identity.expressionValidation)}`,
+    '',
+    '## 05. Aplicação e validação',
+    '- Teste a leitura da marca em tamanhos pequenos, fundos claros e escuros e em uma aplicação real do negócio.',
+    '- Verifique contraste e legibilidade antes de publicar.',
+    '- Compare a proposta com alternativas da categoria para identificar códigos visuais excessivamente comuns.',
+    '- Registre feedback do público pretendido e ajuste o sistema antes de considerar a identidade final.',
+    '',
+    '## Limites desta versão',
+    'Paleta, tipografia, símbolo e aplicações são hipóteses de direção visual. Este documento não comprova disponibilidade de marca, acessibilidade integral, pesquisa de concorrência ou validação com usuários.',
+    '',
+  ].join('\n')
+  const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  const slug = title.normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'marca'
+  link.href = url
+  link.download = `brandsmith-sistema-de-marca-${slug}.md`
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
+}
+
 function Workspace({ userId }: { userId?: string }) {
   const [cloudReady, setCloudReady] = useState(!userId || !supabase)
   const [cloudError, setCloudError] = useState('')
@@ -842,7 +897,7 @@ function Workspace({ userId }: { userId?: string }) {
                 const visualPage = identityView
                 return <div className="modal-backdrop investigation-backdrop"><section className="investigation-modal identity-modal identity-modal-expanded" role="dialog" aria-modal="true" aria-labelledby="identity-title"><div className="investigation-top"><span className="mini-label">ETAPA 04 · SISTEMA DE IDENTIDADE</span><button className="icon-button" onClick={() => setIdentityProject(null)} aria-label="Fechar proposta visual"><X size={18} /></button></div><div className="eyebrow"><span className="eyebrow-line" />DIREÇÃO VISUAL PROPOSTA · {paletteIndex === 0 ? 'CONTRASTE EDITORIAL' : paletteIndex === 1 ? 'EXPRESSÃO CONTEMPORÂNEA' : paletteIndex === 2 ? 'CALOR ORGÂNICO' : paletteIndex === 3 ? 'PRECISÃO EM MOVIMENTO' : paletteIndex === 4 ? 'SOFISTICAÇÃO EXPRESSIVA' : 'ENERGIA GRÁFICA'}</div><h2 id="identity-title">Uma direção visual com intenção<span className="lime-period">.</span></h2><p className="investigation-prompt">Esta proposta parte das respostas e decisões registradas neste projeto. Explore as aplicações e revise as hipóteses; nenhuma escolha é definitiva antes da sua validação.</p><nav className="identity-pages" aria-label="Seções da identidade visual">{[{id:'system',label:'Sistema'},{id:'palette',label:'Cores & tipo'},{id:'applications',label:'Aplicações'},{id:'guidelines',label:'Diretrizes'}].map(page => <button key={page.id} className={visualPage === page.id ? 'identity-page-active' : ''} onClick={() => setIdentityView(page.id)}>{page.label}</button>)}</nav>
                   {visualPage === 'system' && <><div className="identity-board"><div className="identity-board-top"><span>{title.toUpperCase()} / CONCEPT 01</span><span>VISUAL STUDY</span></div><div className="identity-board-hero identity-hero-personal" style={{background:palette[0].hex,color:palette[1].hex}}><span className="identity-mark">{symbol}</span><strong>{title.toUpperCase()}</strong><small>{identity.brandPromise?.trim() || identity.distinction?.trim() || identity.opportunity?.trim() || 'Uma proposta em busca de expressão própria.'}</small><i style={{background:palette[2].hex}} /></div><div className="identity-swatches">{palette.map(color => <div className="identity-swatch" key={color.hex}><span style={{background:color.hex}} /><strong>{color.name}</strong><code>{color.hex}</code></div>)}</div><div className="identity-type-sample"><span className="mini-label">DIREÇÃO TIPOGRÁFICA</span><strong className={condensed ? 'identity-condensed' : serif ? 'identity-serif' : ''}>{typeTitle}</strong><p>{condensed ? 'Títulos condensados e assertivos, com ritmo editorial; texto de apoio simples para equilibrar a energia.' : serif ? 'Títulos com contraste e caráter; uma sans-serif neutra mantém a leitura contemporânea.' : 'Títulos de alto contraste e boa presença, com sans-serif funcional para leitura e informação.'}</p></div><div className="identity-board-notes"><div><span className="mini-label">PERSONALIDADE</span><p>{identity.personality?.trim() || 'Hipótese a validar a partir da investigação.'}</p></div><div><span className="mini-label">TERRITÓRIO VISUAL</span><p>{identity.visualTerritory?.trim() || 'Direção proposta a partir das tensões estratégicas registradas.'}</p></div><div><span className="mini-label">EVITAR</span><p>{identity.avoidances?.trim() || 'Códigos que ainda precisam ser definidos.'}</p></div></div></div></>}
-                  <div className="identity-export-actions"><button className="secondary-button" onClick={() => exportIdentityLogoSvg(title, palette, symbol)}><Download size={15} /> Exportar proposta de logo em SVG</button><span className="investigation-footnote">Arquivo vetorial editável; é uma primeira composição, não um logotipo final validado.</span></div>
+                  <div className="identity-export-actions"><button className="secondary-button" onClick={() => exportIdentityLogoSvg(title, palette, symbol)}><Download size={15} /> Exportar proposta de logo em SVG</button><button className="secondary-button" onClick={() => exportBrandGuide(title, activeProject.category, identity, palette, typeTitle, symbol)}><Download size={15} /> Exportar sistema de marca (.md)</button><span className="investigation-footnote">O guia reúne estratégia, paleta, direção tipográfica e critérios de validação. Documento editável; proposta ainda sujeita à revisão.</span></div>
                   {visualPage === 'palette' && <div className="identity-detail-grid"><section className="identity-detail-card"><span className="mini-label">PALETA E FUNÇÃO</span><h3>Cada cor tem um papel.</h3><p>A combinação foi selecionada a partir do território e da personalidade registrados, não apenas do nome da marca.</p><div className="identity-large-swatches">{palette.map((color,index) => <div key={color.hex}><span style={{background:color.hex}}/><strong>{color.name}</strong><code>{color.hex}</code><small>{['Base e estrutura','Respiro e leitura','Acento e reconhecimento','Apoio e profundidade'][index]}</small></div>)}</div></section><section className="identity-detail-card"><span className="mini-label">HIERARQUIA TIPOGRÁFICA</span><h3 className={condensed ? 'identity-condensed' : serif ? 'identity-serif' : ''}>{title}</h3><p>Título / {condensed ? 'condensada de impacto' : serif ? 'serifada expressiva' : 'sans-serif de personalidade'}</p><div className="identity-type-row"><strong>Ag</strong><div><b>Texto e interface</b><p>Sans-serif de alta legibilidade para textos longos, controles e informação funcional.</p></div></div><div className="identity-type-row"><code>01 / NOTAS</code><p>Monoespaçada para códigos, legendas, dados e detalhes técnicos.</p></div></section></div>}
                   {visualPage === 'applications' && <div className="identity-applications"><section className="identity-application-card identity-social-card" style={{background:palette[0].hex,color:palette[1].hex}}><span className="mini-label">01 / POST SOCIAL</span><span className="identity-application-symbol" style={{color:palette[2].hex}}>{symbol}</span><h3>{title.toUpperCase()}</h3><p>{identity.brandPromise?.trim() || identity.distinction?.trim() || 'Uma ideia que merece ser reconhecida.'}</p><div style={{background:palette[2].hex,color:palette[0].hex}}>IDEIA EM FOCO ↗</div></section><section className="identity-application-card identity-card-paper"><span className="mini-label">02 / CARTÃO DE MARCA</span><span className="identity-application-symbol" style={{color:palette[2].hex}}>{symbol}</span><h3>{title}</h3><p>{identity.personality?.trim() || 'Personalidade em construção'}</p><div className="identity-card-stripe" style={{background:palette[3].hex}}/></section><section className="identity-application-card identity-poster" style={{background:palette[2].hex,color:palette[0].hex}}><span className="mini-label">03 / PÔSTER</span><span>{symbol}</span><h3>{typeTitle}</h3><p>{identity.voicePrinciples?.trim() || identity.visualTerritory?.trim() || 'Uma direção visual que pode evoluir.'}</p></section></div>}
                   {visualPage === 'guidelines' && <div className="identity-detail-grid"><section className="identity-detail-card"><span className="mini-label">REGRAS DE COMPOSIÇÃO</span><h3>Reconhecimento vem da consistência.</h3><ul><li>Usar a cor de acento em um ponto de foco, não em todos os elementos.</li><li>Manter contraste suficiente entre fundo e texto.</li><li>Combinar um título expressivo com texto de apoio legível.</li><li>Usar o símbolo como assinatura, sem substituir o nome quando a marca ainda está em construção.</li></ul></section><section className="identity-detail-card"><span className="mini-label">DECISÕES A VALIDAR</span><h3>Hipóteses, não verdades.</h3><ul><li>Se a paleta expressa a personalidade e o território desejados.</li><li>Se a direção tipográfica combina com o público e os pontos de contato.</li><li>Se os exemplos funcionam nos contextos reais da marca.</li><li>Se o símbolo é distintivo o bastante ou precisa ser redesenhado.</li></ul><p><strong>Base estratégica:</strong> {[identity.personality,identity.visualTerritory,identity.brandPromise,identity.distinction].filter(Boolean).join(' · ') || 'Ainda faltam decisões estratégicas para personalizar melhor a proposta.'}</p></section></div>}

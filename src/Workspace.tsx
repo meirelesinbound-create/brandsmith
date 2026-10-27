@@ -28,7 +28,7 @@ const stages = [
   { number: '04', name: 'Expressar', detail: 'Transformar direção em linguagem e identidade', icon: Lightbulb },
 ]
 
-type DirectionDraft = { opportunity: string; tension: string; distinction: string; validation: string; brandPromise?: string; personality?: string; voicePrinciples?: string; visualTerritory?: string; avoidances?: string; expressionValidation?: string; expressionApproved?: boolean; identityGenerated?: boolean; identityLogoConcept?: LogoConcept }
+type DirectionDraft = { opportunity: string; tension: string; distinction: string; validation: string; brandPromise?: string; personality?: string; voicePrinciples?: string; visualTerritory?: string; avoidances?: string; expressionValidation?: string; expressionApproved?: boolean; identityGenerated?: boolean; identityLogoConcept?: LogoConcept; identityLogoConcepts?: LogoConcept[]; identityLogoConceptGeneratedAt?: string }
 type LogoConcept = { route: 'estrategica' | 'distintiva' | 'nao_convencional'; name: string; idea: string; rationale: string; antiLibrary: string; risk: string; svg: string | null }
 type CloudProject = { id: string; name: string; category: string; stage: string; color: string; investigation_answers: string[]; interpretation_notes: string; direction_notes: DirectionDraft; updated_at?: string }
 
@@ -748,11 +748,12 @@ function Workspace({ userId }: { userId?: string }) {
         Object.values(backup.investigations).every(value => Array.isArray(value) && value.every(answer => typeof answer === 'string'))
       const validInterpretations = validRecord(backup.interpretations) &&
         Object.values(backup.interpretations).every(value => typeof value === 'string')
-      const directionFields = ['opportunity', 'tension', 'distinction', 'validation', 'brandPromise', 'personality', 'voicePrinciples', 'visualTerritory', 'avoidances', 'expressionValidation', 'expressionApproved']
+      const directionFields = ['opportunity', 'tension', 'distinction', 'validation', 'brandPromise', 'personality', 'voicePrinciples', 'visualTerritory', 'avoidances', 'expressionValidation', 'expressionApproved', 'identityGenerated', 'identityLogoConcept', 'identityLogoConcepts', 'identityLogoConceptGeneratedAt']
+      const validLogoConcept = (value: unknown): value is LogoConcept => validRecord(value) && ['estrategica', 'distintiva', 'nao_convencional'].includes(String(value.route)) && typeof value.name === 'string' && typeof value.idea === 'string' && typeof value.rationale === 'string' && typeof value.antiLibrary === 'string' && typeof value.risk === 'string' && (value.svg === null || typeof value.svg === 'string')
       const validDirections = validRecord(backup.directions) &&
         Object.values(backup.directions).every(value => validRecord(value) &&
           Object.entries(value).every(([key, field]) => directionFields.includes(key) &&
-            (key === 'expressionApproved' ? typeof field === 'boolean' : typeof field === 'string')))
+            (key === 'expressionApproved' || key === 'identityGenerated' ? typeof field === 'boolean' : key === 'identityLogoConceptGeneratedAt' ? typeof field === 'string' : key === 'identityLogoConcept' ? validLogoConcept(field) : key === 'identityLogoConcepts' ? Array.isArray(field) && field.length === 3 && field.every(validLogoConcept) : typeof field === 'string')))
       const relatedIds = [
         ...Object.keys(validRecord(backup.investigations) ? backup.investigations : {}),
         ...Object.keys(validRecord(backup.interpretations) ? backup.interpretations : {}),
@@ -938,7 +939,7 @@ function Workspace({ userId }: { userId?: string }) {
                   </div>
                 </section>
               })()}
-              {['Expressão aprovada', 'Identidade visual construída'].includes(activeProject.stage) && <div className="interpretation-entry identity-entry"><div><span className="mini-label">{activeProject.stage === 'Identidade visual construída' ? 'SISTEMA VISUAL SALVO' : 'PRÓXIMA ETAPA · IDENTIDADE VISUAL'}</span><h3>{activeProject.stage === 'Identidade visual construída' ? 'Sua direção visual está registrada.' : 'Transforme a expressão aprovada em uma primeira direção visual.'}</h3><p>{activeProject.stage === 'Identidade visual construída' ? 'Você pode reabrir o sistema visual a qualquer momento para consultar as cores, a tipografia, as aplicações e as diretrizes.' : 'O BRANDSMITH organiza uma proposta inicial de paleta, tipografia, formas e aplicações a partir das decisões do projeto. Você poderá revisar antes de considerar qualquer escolha definitiva.'}</p></div><button className="primary-button" onClick={() => { setIdentityView('system'); setIdentityProject(activeProject.id) }}>{activeProject.stage === 'Identidade visual construída' ? <><Sparkles size={16} /> Reabrir sistema visual</> : <><Sparkles size={16} /> Construir identidade visual <ArrowRight size={15} /></>}</button></div>}
+              {['Expressão aprovada', 'Identidade visual construída'].includes(activeProject.stage) && <div className="interpretation-entry identity-entry"><div><span className="mini-label">{activeProject.stage === 'Identidade visual construída' ? 'SISTEMA VISUAL SALVO' : 'PRÓXIMA ETAPA · IDENTIDADE VISUAL'}</span><h3>{activeProject.stage === 'Identidade visual construída' ? 'Sua direção visual está registrada.' : 'Transforme a expressão aprovada em uma primeira direção visual.'}</h3><p>{activeProject.stage === 'Identidade visual construída' ? 'Você pode reabrir o sistema visual a qualquer momento para consultar as cores, a tipografia, as aplicações e as diretrizes.' : 'O BRANDSMITH organiza uma proposta inicial de paleta, tipografia, formas e aplicações a partir das decisões do projeto. Você poderá revisar antes de considerar qualquer escolha definitiva.'}</p></div><button className="primary-button" onClick={() => { setIdentityView('system'); setLogoConcepts([]); setLogoConceptsFeedback(''); setIdentityProject(activeProject.id) }}>{activeProject.stage === 'Identidade visual construída' ? <><Sparkles size={16} /> Reabrir sistema visual</> : <><Sparkles size={16} /> Construir identidade visual <ArrowRight size={15} /></>}</button></div>}
               {identityProject === activeProject.id && (() => {
                 const identity = directionNotes[activeProject.id] || emptyDirection
                 const strategyText = [activeProject.name, activeProject.category, identity.brandPromise, identity.personality, identity.voicePrinciples, identity.visualTerritory, identity.avoidances, identity.opportunity, identity.tension, identity.distinction, directionNotes[activeProject.id]?.validation].filter(Boolean).join(' ').toLowerCase()
@@ -964,7 +965,7 @@ function Workspace({ userId }: { userId?: string }) {
                   <section className="identity-detail-card logo-concepts-panel">
                     <span className="mini-label">SÍMBOLO DE MARCA · EXPLORAÇÃO COM IA</span>
                     <h3>Três caminhos. Nenhum clichê por padrão.</h3>
-                    <p>Gere três conceitos a partir da investigação, direção e expressão registradas. Você escolhe qual merece seguir para revisão; a proposta visual atual continua intacta.</p>
+                    <p>Os conceitos ficam salvos no projeto. Gere novamente depois de revisar as etapas anteriores para atualizar as propostas da etapa 04; a escolha atual só muda quando você selecionar outra.</p>
                     <label className="logo-boldness-control">Nível de ousadia: <strong>{logoBoldness}/5</strong><input type="range" min="1" max="5" value={logoBoldness} onChange={event => setLogoBoldness(Number(event.target.value))} /></label>
                     <div className="investigation-actions"><button className="primary-button" disabled={generatingLogoConcepts} onClick={async () => {
                       setGeneratingLogoConcepts(true)
@@ -976,14 +977,21 @@ function Workspace({ userId }: { userId?: string }) {
                         const result = await response.json() as { concepts?: LogoConcept[]; error?: string }
                         if (!response.ok) throw new Error(result.error || 'Não foi possível gerar conceitos de símbolo.')
                         if (!Array.isArray(result.concepts) || result.concepts.length !== 3) throw new Error('A IA não retornou os três conceitos esperados.')
-                        setLogoConcepts(result.concepts)
-                        setLogoConceptsFeedback('Três conceitos gerados. Compare a lógica e os riscos antes de escolher.')
+                        const nextDirections = { ...directionNotes, [activeProject.id]: { ...identity, identityLogoConcepts: result.concepts, identityLogoConceptGeneratedAt: new Date().toISOString() } }
+                        try {
+                          localStorage.setItem('brandsmith.directions', JSON.stringify(nextDirections))
+                          setDirectionNotes(nextDirections)
+                          setLogoConcepts(result.concepts)
+                          setLogoConceptsFeedback('Três conceitos atualizados e salvos no projeto com base nas etapas atuais. A escolha anterior foi preservada até você selecionar outra.')
+                        } catch {
+                          setLogoConceptsFeedback('Os conceitos foram gerados, mas não foi possível salvá-los neste navegador. Libere espaço no armazenamento e tente novamente.')
+                        }
                       } catch (error) { setLogoConceptsFeedback(error instanceof Error ? error.message : 'Não foi possível gerar os conceitos. Tente novamente.') }
                       finally { setGeneratingLogoConcepts(false) }
                     }}>{generatingLogoConcepts ? 'Gerando conceitos…' : 'Gerar 3 conceitos de símbolo'} <Sparkles size={15} /></button></div>
                     {logoConceptsFeedback && <p role="status" className="investigation-footnote">{logoConceptsFeedback}</p>}
                     {identity.identityLogoConcept && <div className="logo-selected-concept"><span className="mini-label">CONCEITO SALVO NO PROJETO</span><h4>{identity.identityLogoConcept.name}</h4><p>{identity.identityLogoConcept.idea}</p>{identity.identityLogoConcept.svg && <div className="logo-concept-art" dangerouslySetInnerHTML={{ __html: identity.identityLogoConcept.svg }} />}</div>}
-                    {logoConcepts.length > 0 && <div className="logo-concept-grid">{logoConcepts.map((concept, index) => {
+                    {(logoConcepts.length > 0 ? logoConcepts : identity.identityLogoConcepts || []).length > 0 && <div className="logo-concept-grid">{(logoConcepts.length > 0 ? logoConcepts : identity.identityLogoConcepts || []).map((concept, index) => {
                       const routeLabel = ['Estratégica', 'Distintiva', 'Não convencional'][index]
                       const isSelected = identity.identityLogoConcept?.name === concept.name
                       return <article className={`logo-concept-card ${isSelected ? 'logo-concept-card-selected' : ''}`} key={concept.route}>

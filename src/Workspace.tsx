@@ -114,12 +114,29 @@ function Workspace({ userId }: { userId?: string }) {
   ]
   const currentInvestigation = investigationProject ? investigations[investigationProject] || [] : []
   const baseQuestion = investigationQuestions[questionIndex]
-  const motivationAnswer = (currentInvestigation[1] || '').toLowerCase()
-  const question = questionIndex === 2 && /concorr|mercado|alternativ|marca|produto/.test(motivationAnswer)
-    ? { ...baseQuestion, title: 'O que faria alguém escolher sua proposta?', prompt: 'Você mencionou um contexto de mercado ou alternativas. Em que situação sua proposta seria realmente mais relevante — e para quem?' }
-    : questionIndex === 3 && /experiên|aconteceu|cliente|usuári|vivi|observei/.test((currentInvestigation[0] || '').toLowerCase())
-      ? { ...baseQuestion, title: 'Que sinais concretos você já observou?', prompt: 'Você descreveu uma experiência ou observação. O que aconteceu, com quem e qual parte é observação direta — em vez de interpretação?' }
-      : baseQuestion
+  const normalizedInvestigation = currentInvestigation.map(answer => (answer || '').toLocaleLowerCase('pt-BR'))
+  const projectContext = normalizedInvestigation[0] || ''
+  const motivationContext = normalizedInvestigation[1] || ''
+  const audienceContext = normalizedInvestigation[2] || ''
+  const evidenceContext = normalizedInvestigation[3] || ''
+  const has = (text: string, pattern: RegExp) => pattern.test(text)
+  const question = questionIndex === 2 && has(`${projectContext} ${motivationContext}`, /concorr|mercado|alternativ|substitu|categoria|diferenc|escolh|oferta/)
+    ? { ...baseQuestion, title: 'Em que situação alguém escolheria você?', prompt: 'Você trouxe sinais de mercado ou alternativas. Pense numa situação concreta: o que essa pessoa estaria tentando resolver, o que usaria hoje e o que precisaria perceber para considerar sua proposta?' }
+    : questionIndex === 2 && has(`${projectContext} ${motivationContext}`, /comunidade|cultura|criador|conte[uú]do|arte|impacto|causa|educa/)
+      ? { ...baseQuestion, title: 'Quem sentiria falta se isso não existisse?', prompt: 'Em vez de descrever um público amplo, imagine uma pessoa ou grupo real. Em que momento essa ideia entraria na vida deles e o que mudaria, mesmo que pouco?' }
+      : questionIndex === 3 && has(`${projectContext} ${motivationContext}`, /cliente|usuári|vendi|lan[cç]|test|prot[oó]tipo|atendimento|experiên|aconteceu|observei/)
+        ? { ...baseQuestion, title: 'Que sinais concretos você já observou?', prompt: 'Você mencionou uma experiência, teste ou contato com pessoas. O que aconteceu exatamente, com quem e o que foi observado diretamente — separado da sua interpretação?' }
+        : questionIndex === 3 && has(`${projectContext} ${motivationContext}`, /ideia|pretend|quero|gostaria|imagino|ainda n[aã]o|come[cç]ar|futuro/)
+          ? { ...baseQuestion, title: 'O que já é evidência — e o que ainda é desejo?', prompt: 'É válido estar no começo. Separe o que você já viu, ouviu ou testou daquilo que espera que aconteça. Se ainda não há evidências, qual seria o primeiro sinal observável?' }
+          : questionIndex === 4 && has(`${projectContext} ${motivationContext} ${audienceContext}`, /premium|luxo|sofistica|acess[ií]vel|popular|barat|democrat|exclusiv/)
+            ? { ...baseQuestion, title: 'Que percepção você quer construir — e qual evitar?', prompt: 'Você sinalizou uma posição sobre valor ou acesso. Que impressão deveria surgir no primeiro contato? E que associação faria a marca parecer errada para você?' }
+            : questionIndex === 4 && has(`${projectContext} ${motivationContext}`, /sustent|social|impacto|[ée]tic|inclus|transpar|respons[aá]vel/)
+              ? { ...baseQuestion, title: 'Como esse valor apareceria em decisões reais?', prompt: 'Você citou um valor importante. Que comportamento, escolha ou limite provaria esse compromisso na prática — e o que seria apenas discurso?' }
+              : questionIndex === 5 && has(`${projectContext} ${motivationContext} ${audienceContext} ${evidenceContext}`, /concorr|mercado|alternativ|cliente|usuári|demanda|pre[cç]o|vendi|compra/)
+                ? { ...baseQuestion, title: 'Qual hipótese pode invalidar sua ideia?', prompt: 'Pelo que você contou, a relação entre público, necessidade e escolha parece central. Qual suposição, se estiver errada, faria você repensar a proposta? Como poderia verificá-la com baixo custo?' }
+                : questionIndex === 5 && has(`${projectContext} ${motivationContext} ${audienceContext}`, /comunidade|cultura|criador|conte[uú]do|arte|impacto|causa|educa/)
+                  ? { ...baseQuestion, title: 'O que você precisa descobrir antes de avançar?', prompt: 'Qual dúvida sobre as pessoas, o contexto ou o efeito da ideia mais influencia suas próximas decisões? Que conversa ou pequeno experimento ajudaria a respondê-la?' }
+                  : baseQuestion
   function saveInvestigationAnswer() {
     if (!investigationProject || !currentAnswer.trim()) return
     const nextAnswers = [...currentInvestigation]

@@ -28,26 +28,35 @@ const stages = [
   { number: '04', name: 'Expressar', detail: 'Transformar direção em linguagem e identidade', icon: Lightbulb },
 ]
 
-type DirectionDraft = { opportunity: string; tension: string; distinction: string; validation: string; brandPromise?: string; personality?: string; voicePrinciples?: string; visualTerritory?: string; avoidances?: string; expressionValidation?: string; expressionApproved?: boolean; identityGenerated?: boolean }
+type DirectionDraft = { opportunity: string; tension: string; distinction: string; validation: string; brandPromise?: string; personality?: string; voicePrinciples?: string; visualTerritory?: string; avoidances?: string; expressionValidation?: string; expressionApproved?: boolean; identityGenerated?: boolean; identityLogoConcept?: LogoConcept }
+type LogoConcept = { route: 'estrategica' | 'distintiva' | 'nao_convencional'; name: string; idea: string; rationale: string; antiLibrary: string; risk: string; svg: string | null }
 type CloudProject = { id: string; name: string; category: string; stage: string; color: string; investigation_answers: string[]; interpretation_notes: string; direction_notes: DirectionDraft; updated_at?: string }
 
 
-function exportIdentityLogoSvg(title: string, palette: { hex: string }[], _symbol: string) {
+function slugify(value: string, fallback: string) {
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || fallback
+}
+
+function exportIdentityLogoSvg(title: string, palette: { hex: string }[], _symbol: string, statement = '') {
   const escapeXml = (value: string) => value.replace(/[&<>"]/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[character] || character)
   const safeTitle = escapeXml(title).toUpperCase()
   const background = palette[0]?.hex || '#111111'
   const foreground = palette[1]?.hex || '#F2F0E9'
   const accent = palette[2]?.hex || '#D7FF38'
+  const nameLength = Math.max(title.trim().length, 1)
+  const fontSize = Math.max(48, Math.min(112, Math.floor(1000 / (nameLength * 0.44))))
+  const estimatedWidth = nameLength * fontSize * 0.44
+  const cutX = Math.min(70 + estimatedWidth + 28, 1090)
+  const safeStatement = escapeXml(statement.replace(/\s+/g, ' ').trim().slice(0, 72)).toUpperCase()
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="420" viewBox="0 0 1200 420" role="img" aria-labelledby="title desc">
-  <title id="title">${safeTitle} — proposta de identidade</title>
-  <desc id="desc">Composição tipográfica BRANDSMITH inspirada na rota Ruptura Editorial: contraste forte, tipografia condensada e corte diagonal de acento.</desc>
+  <title id="title">${safeTitle} — proposta tipográfica</title>
+  <desc id="desc">Proposta tipográfica para ${safeTitle}: contraste forte, tipografia condensada e corte diagonal de acento. Conceito para revisão, não logo final.</desc>
   <rect width="1200" height="420" fill="${background}"/>
   <path d="M0 0H18V420H0Z" fill="${accent}"/>
-  <text x="74" y="78" fill="${accent}" font-family="IBM Plex Mono,monospace" font-size="15" letter-spacing="3">BRANDSMITH / RUPTURA EDITORIAL</text>
-  <text x="70" y="250" fill="${foreground}" font-family="Barlow Condensed,Impact,Arial Narrow,sans-serif" font-size="112" font-weight="800" letter-spacing="-3">${safeTitle}</text>
-  <path d="M610 112H644L570 276H536Z" fill="${accent}"/>
-  <path d="M74 290H1126" stroke="${foreground}" stroke-opacity=".24" stroke-width="1"/>
-  <text x="74" y="344" fill="${foreground}" opacity=".82" font-family="IBM Plex Mono,monospace" font-size="18" letter-spacing="1.5">O ÓBVIO NÃO CRIA MARCAS EXTRAORDINÁRIAS.</text>
+  <text x="74" y="78" fill="${accent}" font-family="IBM Plex Mono,monospace" font-size="15" letter-spacing="3">${safeTitle} / CONCEITO 01</text>
+  <text x="70" y="250" fill="${foreground}" font-family="Barlow Condensed,Impact,Arial Narrow,sans-serif" font-size="${fontSize}" font-weight="800" letter-spacing="-3">${safeTitle}</text>
+  <path d="M${cutX} 112H${cutX + 34}L${cutX - 40} 276H${cutX - 74}Z" fill="${accent}"/>
+  <path d="M74 290H1126" stroke="${foreground}" stroke-opacity=".24" stroke-width="1"/>${safeStatement ? `\n  <text x="74" y="344" fill="${foreground}" opacity=".82" font-family="IBM Plex Mono,monospace" font-size="18" letter-spacing="1.5">${safeStatement}</text>` : ''}
   <text x="1126" y="385" text-anchor="end" fill="${accent}" font-family="IBM Plex Mono,monospace" font-size="12">CONCEITO TIPOGRÁFICO / REVISE ANTES DE USO FINAL</text>
 </svg>`
   const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' })
@@ -161,6 +170,10 @@ function Workspace({ userId }: { userId?: string }) {
   const [expressionProject, setExpressionProject] = useState<string | null>(null)
   const [identityProject, setIdentityProject] = useState<string | null>(null)
   const [identityView, setIdentityView] = useState('system')
+  const [logoConcepts, setLogoConcepts] = useState<LogoConcept[]>([])
+  const [generatingLogoConcepts, setGeneratingLogoConcepts] = useState(false)
+  const [logoConceptsFeedback, setLogoConceptsFeedback] = useState('')
+  const [logoBoldness, setLogoBoldness] = useState(4)
   const emptyExpression = { brandPromise: '', personality: '', voicePrinciples: '', visualTerritory: '', avoidances: '', expressionValidation: '' }
   const [draftExpression, setDraftExpression] = useState(emptyExpression)
   const [generatingExpression, setGeneratingExpression] = useState(false)
@@ -937,7 +950,40 @@ function Workspace({ userId }: { userId?: string }) {
                 const visualPage = identityView
                 return <div className="modal-backdrop investigation-backdrop"><section className="investigation-modal identity-modal identity-modal-expanded" role="dialog" aria-modal="true" aria-labelledby="identity-title"><div className="investigation-top"><span className="mini-label">ETAPA 04 · SISTEMA DE IDENTIDADE</span><button className="icon-button" onClick={() => setIdentityProject(null)} aria-label="Fechar proposta visual"><X size={18} /></button></div><div className="eyebrow"><span className="eyebrow-line" />DIREÇÃO VISUAL PROPOSTA · {paletteIndex === 0 ? 'CONTRASTE EDITORIAL' : paletteIndex === 1 ? 'EXPRESSÃO CONTEMPORÂNEA' : paletteIndex === 2 ? 'CALOR ORGÂNICO' : paletteIndex === 3 ? 'PRECISÃO EM MOVIMENTO' : paletteIndex === 4 ? 'SOFISTICAÇÃO EXPRESSIVA' : 'ENERGIA GRÁFICA'}</div><h2 id="identity-title">Uma direção visual com intenção<span className="lime-period">.</span></h2><p className="investigation-prompt">Esta proposta parte das respostas e decisões registradas neste projeto. Explore as aplicações e revise as hipóteses; nenhuma escolha é definitiva antes da sua validação.</p><nav className="identity-pages" aria-label="Seções da identidade visual">{[{id:'system',label:'Sistema'},{id:'palette',label:'Cores & tipo'},{id:'applications',label:'Aplicações'},{id:'guidelines',label:'Diretrizes'}].map(page => <button key={page.id} className={visualPage === page.id ? 'identity-page-active' : ''} onClick={() => setIdentityView(page.id)}>{page.label}</button>)}</nav>
                   {visualPage === 'system' && <><div className="identity-board"><div className="identity-board-top"><span>{title.toUpperCase()} / CONCEPT 01</span><span>VISUAL STUDY</span></div><div className="identity-board-hero identity-hero-personal" style={{background:palette[0].hex,color:palette[1].hex}}><span className="identity-mark">{symbol}</span><strong>{title.toUpperCase()}</strong><small>{identity.brandPromise?.trim() || identity.distinction?.trim() || identity.opportunity?.trim() || 'Uma proposta em busca de expressão própria.'}</small><i style={{background:palette[2].hex}} /></div><div className="identity-swatches">{palette.map(color => <div className="identity-swatch" key={color.hex}><span style={{background:color.hex}} /><strong>{color.name}</strong><code>{color.hex}</code></div>)}</div><div className="identity-type-sample"><span className="mini-label">DIREÇÃO TIPOGRÁFICA</span><strong className={condensed ? 'identity-condensed' : serif ? 'identity-serif' : ''}>{typeTitle}</strong><p>{condensed ? 'Títulos condensados e assertivos, com ritmo editorial; texto de apoio simples para equilibrar a energia.' : serif ? 'Títulos com contraste e caráter; uma sans-serif neutra mantém a leitura contemporânea.' : 'Títulos de alto contraste e boa presença, com sans-serif funcional para leitura e informação.'}</p></div><div className="identity-board-notes"><div><span className="mini-label">PERSONALIDADE</span><p>{identity.personality?.trim() || 'Hipótese a validar a partir da investigação.'}</p></div><div><span className="mini-label">TERRITÓRIO VISUAL</span><p>{identity.visualTerritory?.trim() || 'Direção proposta a partir das tensões estratégicas registradas.'}</p></div><div><span className="mini-label">EVITAR</span><p>{identity.avoidances?.trim() || 'Códigos que ainda precisam ser definidos.'}</p></div></div></div></>}
-                  <div className="identity-export-actions"><button className="secondary-button" onClick={() => exportIdentityLogoSvg(title, palette, symbol)}><Download size={15} /> Exportar proposta de logo em SVG</button><button className="secondary-button" onClick={() => exportBrandGuide(title, activeProject.category, identity, palette, typeTitle, symbol)}><Download size={15} /> Exportar sistema de marca (.md)</button><span className="investigation-footnote">O guia reúne estratégia, paleta, direção tipográfica e critérios de validação. Documento editável; proposta ainda sujeita à revisão.</span></div>
+                  <section className="identity-detail-card logo-concepts-panel">
+                    <span className="mini-label">SÍMBOLO DE MARCA · EXPLORAÇÃO COM IA</span>
+                    <h3>Três caminhos. Nenhum clichê por padrão.</h3>
+                    <p>Gere três conceitos a partir da investigação, direção e expressão registradas. Você escolhe qual merece seguir para revisão; a proposta visual atual continua intacta.</p>
+                    <label className="logo-boldness-control">Nível de ousadia: <strong>{logoBoldness}/5</strong><input type="range" min="1" max="5" value={logoBoldness} onChange={event => setLogoBoldness(Number(event.target.value))} /></label>
+                    <div className="investigation-actions"><button className="primary-button" disabled={generatingLogoConcepts} onClick={async () => {
+                      setGeneratingLogoConcepts(true)
+                      setLogoConceptsFeedback('Gerando três rotas de símbolo com base nas decisões do projeto…')
+                      try {
+                        const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+                        if (sessionError || !sessionData.session?.access_token) throw new Error('Sua sessão não está disponível. Entre novamente e tente de novo.')
+                        const response = await fetch('/api/logo-concepts', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionData.session.access_token}` }, body: JSON.stringify({ projectName: title, category: activeProject.category, investigation: investigations[activeProject.id] || [], direction: identity, expression: identity, boldness: logoBoldness }) })
+                        const result = await response.json() as { concepts?: LogoConcept[]; error?: string }
+                        if (!response.ok) throw new Error(result.error || 'Não foi possível gerar conceitos de símbolo.')
+                        if (!Array.isArray(result.concepts) || result.concepts.length !== 3) throw new Error('A IA não retornou os três conceitos esperados.')
+                        setLogoConcepts(result.concepts)
+                        setLogoConceptsFeedback('Três conceitos gerados. Compare a lógica e os riscos antes de escolher.')
+                      } catch (error) { setLogoConceptsFeedback(error instanceof Error ? error.message : 'Não foi possível gerar os conceitos. Tente novamente.') }
+                      finally { setGeneratingLogoConcepts(false) }
+                    }}>{generatingLogoConcepts ? 'Gerando conceitos…' : 'Gerar 3 conceitos de símbolo'} <Sparkles size={15} /></button></div>
+                    {logoConceptsFeedback && <p role="status" className="investigation-footnote">{logoConceptsFeedback}</p>}
+                    {identity.identityLogoConcept && <div className="logo-selected-concept"><span className="mini-label">CONCEITO SALVO NO PROJETO</span><h4>{identity.identityLogoConcept.name}</h4><p>{identity.identityLogoConcept.idea}</p>{identity.identityLogoConcept.svg && <div className="logo-concept-art" dangerouslySetInnerHTML={{ __html: identity.identityLogoConcept.svg }} />}</div>}
+                    {logoConcepts.length > 0 && <div className="logo-concept-grid">{logoConcepts.map((concept, index) => {
+                      const routeLabel = ['Estratégica', 'Distintiva', 'Não convencional'][index]
+                      const isSelected = identity.identityLogoConcept?.name === concept.name
+                      return <article className={`logo-concept-card ${isSelected ? 'logo-concept-card-selected' : ''}`} key={concept.route}>
+                        <span className="mini-label">ROTA 0{index + 1} · {routeLabel.toUpperCase()}</span><h4>{concept.name}</h4><p>{concept.idea}</p>
+                        {concept.svg ? <div className="logo-concept-art" dangerouslySetInnerHTML={{ __html: concept.svg }} /> : <p className="investigation-footnote">O desenho não passou pela validação de segurança. O conceito textual continua disponível.</p>}
+                        <p><strong>Por que faz sentido</strong><br />{concept.rationale}</p><p><strong>Teste anti-clichê</strong><br />{concept.antiLibrary}</p><p><strong>Risco</strong><br />{concept.risk}</p>
+                        <button className={isSelected ? 'secondary-button' : 'primary-button'} onClick={() => { const next = { ...directionNotes, [activeProject.id]: { ...identity, identityLogoConcept: concept } }; if (!saveExpressionChanges(activeProject.id, 'Identidade visual construída', next)) return; setNotice(`Conceito “${concept.name}” salvo no projeto. Você ainda pode revisar ou trocar a escolha.`) }}>{isSelected ? 'Conceito selecionado' : 'Selecionar este conceito'}</button>
+                      </article>
+                    })}</div>}
+                  </section>
+                  <div className="identity-export-actions"><button className="secondary-button" onClick={() => exportIdentityLogoSvg(title, palette, symbol, identity.brandPromise?.trim() || identity.distinction?.trim() || '')}><Download size={15} /> Exportar proposta de logo em SVG</button><button className="secondary-button" onClick={() => exportBrandGuide(title, activeProject.category, identity, palette, typeTitle, symbol)}><Download size={15} /> Exportar sistema de marca (.md)</button><span className="investigation-footnote">O guia reúne estratégia, paleta, direção tipográfica e critérios de validação. Documento editável; proposta ainda sujeita à revisão.</span></div>
                   {visualPage === 'palette' && <div className="identity-detail-grid"><section className="identity-detail-card"><span className="mini-label">PALETA E FUNÇÃO</span><h3>Cada cor tem um papel.</h3><p>A combinação foi selecionada a partir do território e da personalidade registrados, não apenas do nome da marca.</p><div className="identity-large-swatches">{palette.map((color,index) => <div key={color.hex}><span style={{background:color.hex}}/><strong>{color.name}</strong><code>{color.hex}</code><small>{['Base e estrutura','Respiro e leitura','Acento e reconhecimento','Apoio e profundidade'][index]}</small></div>)}</div></section><section className="identity-detail-card"><span className="mini-label">HIERARQUIA TIPOGRÁFICA</span><h3 className={condensed ? 'identity-condensed' : serif ? 'identity-serif' : ''}>{title}</h3><p>Título / {condensed ? 'condensada de impacto' : serif ? 'serifada expressiva' : 'sans-serif de personalidade'}</p><div className="identity-type-row"><strong>Ag</strong><div><b>Texto e interface</b><p>Sans-serif de alta legibilidade para textos longos, controles e informação funcional.</p></div></div><div className="identity-type-row"><code>01 / NOTAS</code><p>Monoespaçada para códigos, legendas, dados e detalhes técnicos.</p></div></section></div>}
                   {visualPage === 'applications' && <div className="identity-applications"><section className="identity-application-card identity-social-card" style={{background:palette[0].hex,color:palette[1].hex}}><span className="mini-label">01 / POST SOCIAL</span><span className="identity-application-symbol" style={{color:palette[2].hex}}>{symbol}</span><h3>{title.toUpperCase()}</h3><p>{identity.brandPromise?.trim() || identity.distinction?.trim() || 'Uma ideia que merece ser reconhecida.'}</p><div style={{background:palette[2].hex,color:palette[0].hex}}>IDEIA EM FOCO ↗</div></section><section className="identity-application-card identity-card-paper"><span className="mini-label">02 / CARTÃO DE MARCA</span><span className="identity-application-symbol" style={{color:palette[2].hex}}>{symbol}</span><h3>{title}</h3><p>{identity.personality?.trim() || 'Personalidade em construção'}</p><div className="identity-card-stripe" style={{background:palette[3].hex}}/></section><section className="identity-application-card identity-poster" style={{background:palette[2].hex,color:palette[0].hex}}><span className="mini-label">03 / PÔSTER</span><span>{symbol}</span><h3>{typeTitle}</h3><p>{identity.voicePrinciples?.trim() || identity.visualTerritory?.trim() || 'Uma direção visual que pode evoluir.'}</p></section></div>}
                   {visualPage === 'guidelines' && <div className="identity-detail-grid"><section className="identity-detail-card"><span className="mini-label">REGRAS DE COMPOSIÇÃO</span><h3>Reconhecimento vem da consistência.</h3><ul><li>Usar a cor de acento em um ponto de foco, não em todos os elementos.</li><li>Manter contraste suficiente entre fundo e texto.</li><li>Combinar um título expressivo com texto de apoio legível.</li><li>Usar o símbolo como assinatura, sem substituir o nome quando a marca ainda está em construção.</li></ul></section><section className="identity-detail-card"><span className="mini-label">DECISÕES A VALIDAR</span><h3>Hipóteses, não verdades.</h3><ul><li>Se a paleta expressa a personalidade e o território desejados.</li><li>Se a direção tipográfica combina com o público e os pontos de contato.</li><li>Se os exemplos funcionam nos contextos reais da marca.</li><li>Se o símbolo é distintivo o bastante ou precisa ser redesenhado.</li></ul><p><strong>Base estratégica:</strong> {[identity.personality,identity.visualTerritory,identity.brandPromise,identity.distinction].filter(Boolean).join(' · ') || 'Ainda faltam decisões estratégicas para personalizar melhor a proposta.'}</p></section></div>}

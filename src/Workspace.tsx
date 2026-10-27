@@ -580,6 +580,17 @@ function Workspace({ userId }: { userId?: string }) {
     return true
   }
 
+  function saveLogoConcept(projectId: string, concept: LogoConcept) {
+    const nextDirections = { ...directionNotes, [projectId]: { ...(directionNotes[projectId] || emptyDirection), identityLogoConcept: concept } }
+    try {
+      localStorage.setItem('brandsmith.directions', JSON.stringify(nextDirections))
+      setDirectionNotes(nextDirections)
+      setNotice(`Conceito “${concept.name}” salvo no projeto. Você ainda pode revisar ou trocar a escolha.`)
+    } catch {
+      setNotice('Não foi possível salvar o conceito neste navegador. Libere espaço no armazenamento e tente novamente.')
+    }
+  }
+
   function createProject(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const name = projectName.trim()
@@ -979,7 +990,7 @@ function Workspace({ userId }: { userId?: string }) {
                         <span className="mini-label">ROTA 0{index + 1} · {routeLabel.toUpperCase()}</span><h4>{concept.name}</h4><p>{concept.idea}</p>
                         {concept.svg ? <div className="logo-concept-art" dangerouslySetInnerHTML={{ __html: concept.svg }} /> : <p className="investigation-footnote">O desenho não passou pela validação de segurança. O conceito textual continua disponível.</p>}
                         <p><strong>Por que faz sentido</strong><br />{concept.rationale}</p><p><strong>Teste anti-clichê</strong><br />{concept.antiLibrary}</p><p><strong>Risco</strong><br />{concept.risk}</p>
-                        <button className={isSelected ? 'secondary-button' : 'primary-button'} onClick={() => { const next = { ...directionNotes, [activeProject.id]: { ...identity, identityLogoConcept: concept } }; if (!saveExpressionChanges(activeProject.id, 'Identidade visual construída', next)) return; setNotice(`Conceito “${concept.name}” salvo no projeto. Você ainda pode revisar ou trocar a escolha.`) }}>{isSelected ? 'Conceito selecionado' : 'Selecionar este conceito'}</button>
+                        <button className={isSelected ? 'secondary-button' : 'primary-button'} onClick={() => saveLogoConcept(activeProject.id, concept)}>{isSelected ? 'Conceito selecionado' : 'Selecionar este conceito'}</button>
                       </article>
                     })}</div>}
                   </section>

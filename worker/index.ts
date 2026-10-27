@@ -15,6 +15,73 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url)
+    if (url.pathname === "/api/directions") {
+      if (request.method !== "POST") return json({ error: "Método não permitido." }, 405)
+      const authorization = request.headers.get("Authorization") || ""
+      const token = authorization.startsWith("Bearer ") ? authorization.slice(7).trim() : ""
+      if (!token) return json({ error: "Entre na sua conta para gerar direções criativas." }, 401)
+      if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) return json({ error: "A integração segura com o Supabase ainda não foi configurada no Worker." }, 503)
+      let userResponse: Response
+      try {
+        userResponse = await fetch(new URL("/auth/v1/user", env.SUPABASE_URL), {
+          headers: { apikey: env.SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` },
+        })
+      } catch {
+        return json({ error: "Não foi possível verificar sua sessão. Tente novamente." }, 502)
+      }
+      if (!userResponse.ok) return json({ error: "Sua sessão expirou. Entre novamente e tente de novo." }, 401)
+      let payload: { projectName?: unknown; category?: unknown; answers?: unknown; analysis?: unknown; currentDirection?: unknown }
+      try { payload = await request.json() as typeof payload } catch { return json({ error: "O pedido enviado não é um JSON válido." }, 400) }
+      const projectName = typeof payload.projectName === "string" ? payload.projectName.trim().slice(0, 160) : ""
+      const category = typeof payload.category === "string" ? payload.category.trim().slice(0, 160) : "A definir"
+      const answers = Array.isArray(payload.answers) ? payload.answers.slice(0, 6).map(value => typeof value === "string" ? value.trim().slice(0, 1800) : "") : []
+      const analysis = typeof payload.analysis === "string" ? payload.analysis.trim().slice(0, 6000) : ""
+      const currentDirection = payload.currentDirection && typeof payload.currentDirection === "object" ? JSON.stringify(payload.currentDirection).slice(0, 2500) : ""
+      if (!projectName || (!answers.some(Boolean) && !analysis.trim())) return json({ error: "Complete a investigação ou a análise estratégica antes de gerar direções." }, 400)
+      const prompt = [
+        "Crie exatamente três direções estratégicas de marca para discussão, em português brasileiro. Você é diretor de estratégia e criação exigente, não um gerador de slogans.",
+        "As três direções precisam partir de lógicas realmente diferentes: cada uma deve propor uma tensão central, uma promessa e uma personalidade distintas. Não entregue três sinônimos, nem variações cosméticas de uma mesma ideia.",
+        "Não invente dados de mercado, públicos pesquisados, concorrentes ou evidências. Trate as respostas como relatos e hipóteses, indique incertezas e fundamente cada direção no material recebido.",
+        "Evite clichês como 'inovador', 'conectar pessoas', 'transformar sonhos em realidade', 'qualidade e confiança' sem especificidade demonstrável. Não invente slogans. Diferencie conceito estratégico de execução visual.",
+        "Retorne SOMENTE JSON válido no formato { \"directions\": [ { \"name\": string, \"strategicIdea\": string, \"audienceMoment\": string, \"promise\": string, \"personality\": string, \"visualTerritory\": string, \"risk\": string, \"validation\": string } ] }. Exatamente três itens; cada campo deve conter texto útil, concreto e específico.",
+        `PROJETO: ${projectName}`, `CATEGORIA: ${category || "A definir"}`,
+        "RESPOSTAS DA INVESTIGAÇÃO:", ...answers.map((answer, i) => `${i + 1}. ${answer || "Não informado"}`),
+        `ANÁLISE ESTRATÉGICA JÁ REGISTRADA: ${analysis || "Nenhuma"}`,
+        `RASCUNHO DE DIREÇÃO EXISTENTE (use apenas como contexto, não replique automaticamente): ${currentDirection || "Nenhum"}`,
+        "Cada território precisa explicar: ideia estratégica, momento/contexto relevante para o público, promessa possível, personalidade, território visual (princípio visual, não apenas cores), risco e um teste de baixo custo. Se os dados forem insuficientes, explicite a incerteza e proponha como descobrir."
+      ].join("\n\n")
+      try {
+        const result = await env.AI.run("@cf/zai-org/glm-4.7-flash", { messages: [
+          { role: "system", content: "Você é uma direção criativa estratégica que desafia o óbvio sem sacrificar o rigor. Gere diferenças conceituais verificáveis e seja transparente sobre incertezas." },
+          { role: "user", content: prompt },
+        ] })
+        const output = result && typeof result === "object" ? result as Record<string, unknown> : {}
+        const choices = Array.isArray(output.choices) ? output.choices : []
+        const first = choices[0] && typeof choices[0] === "object" ? choices[0] as Record<string, unknown> : {}
+        const message = first.message && typeof first.message === "object" ? first.message as Record<string, unknown> : {}
+        const raw = [output.response, output.output_text, output.generated_text, message.content, first.text].find(value => typeof value === "string" && value.trim())
+        if (typeof raw !== "string") return json({ error: "O modelo não retornou direções em texto. Tente novamente." }, 502)
+        const cleaned = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "")
+        let parsed: unknown
+        try { parsed = JSON.parse(cleaned) } catch {
+          const start = cleaned.indexOf("{")
+          const end = cleaned.lastIndexOf("}")
+          if (start < 0 || end <= start) return json({ error: "A resposta da IA não veio em formato estruturado. Tente novamente." }, 502)
+          try { parsed = JSON.parse(cleaned.slice(start, end + 1)) } catch { return json({ error: "A resposta da IA não veio em JSON válido. Tente novamente." }, 502) }
+        }
+        const directions = parsed && typeof parsed === "object" && Array.isArray((parsed as { directions?: unknown }).directions)
+          ? (parsed as { directions: unknown[] }).directions.slice(0, 3).filter(item => item && typeof item === "object")
+          : []
+        const required = ["name", "strategicIdea", "audienceMoment", "promise", "personality", "visualTerritory", "risk", "validation"]
+        if (directions.length !== 3 || directions.some(item => required.some(key => typeof (item as Record<string, unknown>)[key] !== "string" || !(item as Record<string, string>)[key].trim()))) {
+          return json({ error: "A IA não retornou três direções completas. Tente novamente." }, 502)
+        }
+        return json({ directions })
+      } catch (error) {
+        console.error("Workers AI creative directions request failed", error instanceof Error ? { name: error.name, message: error.message } : { message: String(error) })
+        return json({ error: "Não foi possível gerar as direções criativas. Consulte os logs do Worker para identificar a causa." }, 502)
+      }
+    }
     if (url.pathname !== "/api/strategy") return env.ASSETS.fetch(request)
     if (request.method !== "POST") return json({ error: "Método não permitido." }, 405)
 

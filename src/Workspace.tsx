@@ -507,7 +507,7 @@ function Workspace({ userId }: { userId?: string }) {
       })
       const result = await response.json() as { expression?: typeof emptyExpression; error?: string }
       if (!response.ok) throw new Error(result.error || 'Não foi possível gerar a proposta.')
-      if (!result.expression || Object.values(emptyExpression).some(key => typeof result.expression?.[key as keyof typeof emptyExpression] !== 'string' || !result.expression?.[key as keyof typeof emptyExpression].trim())) throw new Error('A IA não retornou os seis campos completos. Tente novamente.')
+      if (!result.expression || (Object.keys(emptyExpression) as Array<keyof typeof emptyExpression>).some(key => typeof result.expression?.[key] !== 'string' || !result.expression?.[key].trim())) throw new Error('A IA não retornou os seis campos completos. Tente novamente.')
       setDraftExpression(result.expression)
       setExpressionFeedback('Proposta gerada. Revise e edite os seis campos antes de salvar; nada foi aprovado automaticamente.')
     } catch (error) {

@@ -15,6 +15,64 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url)
+    if (url.pathname === "/api/expression") {
+      if (request.method !== "POST") return json({ error: "Método não permitido." }, 405)
+      const authorization = request.headers.get("Authorization") || ""
+      const token = authorization.startsWith("Bearer ") ? authorization.slice(7).trim() : ""
+      if (!token) return json({ error: "Entre na sua conta para gerar uma proposta de expressão." }, 401)
+      if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) return json({ error: "A integração segura com o Supabase ainda não foi configurada no Worker." }, 503)
+      let userResponse: Response
+      try {
+        userResponse = await fetch(new URL("/auth/v1/user", env.SUPABASE_URL), { headers: { apikey: env.SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` } })
+      } catch { return json({ error: "Não foi possível verificar sua sessão. Tente novamente." }, 502) }
+      if (!userResponse.ok) return json({ error: "Sua sessão expirou. Entre novamente e tente de novo." }, 401)
+      let payload: { projectName?: unknown; category?: unknown; investigation?: unknown; analysis?: unknown; direction?: unknown; currentExpression?: unknown }
+      try { payload = await request.json() as typeof payload } catch { return json({ error: "O pedido enviado não é um JSON válido." }, 400) }
+      const projectName = typeof payload.projectName === "string" ? payload.projectName.trim().slice(0, 160) : ""
+      const category = typeof payload.category === "string" ? payload.category.trim().slice(0, 160) : "A definir"
+      const investigation = Array.isArray(payload.investigation) ? payload.investigation.slice(0, 6).map(v => typeof v === "string" ? v.trim().slice(0, 1800) : "") : []
+      const analysis = typeof payload.analysis === "string" ? payload.analysis.trim().slice(0, 5000) : ""
+      const direction = payload.direction && typeof payload.direction === "object" ? JSON.stringify(payload.direction).slice(0, 2200) : ""
+      const currentExpression = payload.currentExpression && typeof payload.currentExpression === "object" ? JSON.stringify(payload.currentExpression).slice(0, 2200) : ""
+      if (!projectName || (!investigation.some(Boolean) && !analysis && !direction)) return json({ error: "Registre investigação ou direção estratégica antes de gerar a expressão." }, 400)
+      const fields = ["brandPromise", "personality", "voicePrinciples", "visualTerritory", "avoidances", "expressionValidation"]
+      const prompt = [
+        "Você é diretor de estratégia e criação do BRANDSMITH. Escreva em português brasileiro uma proposta coerente de expressão de marca, específica e criticamente fundamentada no contexto fornecido.",
+        "Não invente pesquisa, fatos, concorrentes ou validação. Diferencie evidências de hipóteses. Evite clichês, adjetivos vazios e slogans genéricos. A voz precisa ter regras práticas, a personalidade precisa descrever comportamento e o território visual deve descrever princípios compositivos, não só listar cores.",
+        "Retorne SOMENTE JSON válido com seis propriedades string: brandPromise, personality, voicePrinciples, visualTerritory, avoidances, expressionValidation. Todos os campos devem ser úteis e específicos. A proposta é um rascunho editável, não uma decisão final.",
+        `MARCA: ${projectName}`, `CATEGORIA: ${category}`,
+        "RESPOSTAS DA INVESTIGAÇÃO:", ...investigation.map((v, i) => `${i + 1}. ${v || "Não informado"}`),
+        `ANÁLISE ESTRATÉGICA: ${analysis || "Não registrada"}`,
+        `DIREÇÃO ESCOLHIDA: ${direction || "Não registrada"}`,
+        `EXPRESSÃO ATUAL (preserve pontos úteis, melhore o que for genérico): ${currentExpression || "Ainda vazia"}`,
+        "Em expressionValidation proponha testes concretos e baratos; em avoidances identifique clichês específicos que contradiriam o contexto. Não preencha lacunas com certezas inventadas."
+      ].join("\n\n")
+      try {
+        const result = await env.AI.run("@cf/zai-org/glm-4.7-flash", { messages: [
+          { role: "system", content: "Você é um diretor criativo rigoroso. Desafie o óbvio com clareza, sem inventar evidências e sem confundir hipótese com verdade." },
+          { role: "user", content: prompt },
+        ] })
+        const output = result && typeof result === "object" ? result as Record<string, unknown> : {}
+        const choices = Array.isArray(output.choices) ? output.choices : []
+        const first = choices[0] && typeof choices[0] === "object" ? choices[0] as Record<string, unknown> : {}
+        const message = first.message && typeof first.message === "object" ? first.message as Record<string, unknown> : {}
+        const raw = [output.response, output.output_text, output.generated_text, message.content, first.text].find(value => typeof value === "string" && value.trim())
+        if (typeof raw !== "string") return json({ error: "A IA não retornou a expressão em texto. Tente novamente." }, 502)
+        const cleaned = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "")
+        let parsed: unknown
+        try { parsed = JSON.parse(cleaned) } catch {
+          const start = cleaned.indexOf("{"), end = cleaned.lastIndexOf("}")
+          if (start < 0 || end <= start) return json({ error: "A resposta da IA não veio em formato estruturado. Tente novamente." }, 502)
+          try { parsed = JSON.parse(cleaned.slice(start, end + 1)) } catch { return json({ error: "A resposta da IA não veio em JSON válido. Tente novamente." }, 502) }
+        }
+        const expression = parsed && typeof parsed === "object" ? parsed as Record<string, unknown> : {}
+        if (fields.some(key => typeof expression[key] !== "string" || !(expression[key] as string).trim())) return json({ error: "A IA não retornou os seis campos completos. Tente novamente." }, 502)
+        return json({ expression: Object.fromEntries(fields.map(key => [key, (expression[key] as string).trim()])) })
+      } catch (error) {
+        console.error("Workers AI brand expression request failed", error instanceof Error ? { name: error.name, message: error.message } : { message: String(error) })
+        return json({ error: "Não foi possível gerar a expressão da marca. Tente novamente." }, 502)
+      }
+    }
     if (url.pathname === "/api/directions") {
       if (request.method !== "POST") return json({ error: "Método não permitido." }, 405)
       const authorization = request.headers.get("Authorization") || ""

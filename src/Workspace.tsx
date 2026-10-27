@@ -163,6 +163,8 @@ function Workspace({ userId }: { userId?: string }) {
   const [identityView, setIdentityView] = useState('system')
   const emptyExpression = { brandPromise: '', personality: '', voicePrinciples: '', visualTerritory: '', avoidances: '', expressionValidation: '' }
   const [draftExpression, setDraftExpression] = useState(emptyExpression)
+  const [generatingExpression, setGeneratingExpression] = useState(false)
+  const [expressionFeedback, setExpressionFeedback] = useState('')
   const investigationQuestions = [
     { title: 'O que você está construindo?', prompt: 'Conte com suas palavras o que é a marca, produto ou projeto. Não precisa ter a resposta pronta.', kind: 'contexto' },
     { title: 'Por que isso precisa existir?', prompt: 'Que necessidade, incômodo ou oportunidade fez essa ideia nascer?', kind: 'motivação' },
@@ -474,6 +476,44 @@ function Workspace({ userId }: { userId?: string }) {
       setDirectionsFeedback(error instanceof Error ? error.message : 'Falha inesperada ao gerar direções.')
     } finally {
       setGeneratingDirections(false)
+    }
+  }
+
+  async function generateBrandExpression() {
+    setExpressionFeedback('')
+    if (!expressionProject) return
+    if (!userId || !supabase) {
+      setExpressionFeedback('Entre na sua conta para gerar uma proposta de expressão com IA.')
+      return
+    }
+    const project = projects.find(item => item.id === expressionProject)
+    const currentDirection = directionNotes[expressionProject] || emptyDirection
+    setGeneratingExpression(true)
+    setExpressionFeedback('Construindo uma proposta coerente com a investigação e a direção…')
+    try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+      if (sessionError || !sessionData.session?.access_token) throw new Error('Sua sessão não está disponível. Entre novamente e tente de novo.')
+      const response = await fetch('/api/expression', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionData.session.access_token}` },
+        body: JSON.stringify({
+          projectName: project?.name || 'Projeto sem nome',
+          category: project?.category || 'A definir',
+          investigation: investigations[expressionProject] || [],
+          analysis: interpretationNotes[expressionProject] || '',
+          direction: currentDirection,
+          currentExpression: draftExpression,
+        }),
+      })
+      const result = await response.json() as { expression?: typeof emptyExpression; error?: string }
+      if (!response.ok) throw new Error(result.error || 'Não foi possível gerar a proposta.')
+      if (!result.expression || Object.values(emptyExpression).some(key => typeof result.expression?.[key as keyof typeof emptyExpression] !== 'string' || !result.expression?.[key as keyof typeof emptyExpression].trim())) throw new Error('A IA não retornou os seis campos completos. Tente novamente.')
+      setDraftExpression(result.expression)
+      setExpressionFeedback('Proposta gerada. Revise e edite os seis campos antes de salvar; nada foi aprovado automaticamente.')
+    } catch (error) {
+      setExpressionFeedback(error instanceof Error ? error.message : 'Não foi possível gerar a proposta. Tente novamente.')
+    } finally {
+      setGeneratingExpression(false)
     }
   }
 
@@ -943,7 +983,7 @@ function Workspace({ userId }: { userId?: string }) {
       </main>
 
       {notice && <div className="toast" role="status"><span>{notice}</span><button onClick={() => setNotice('')} aria-label="Fechar aviso"><X size={15} /></button></div>}
-      {expressionProject && <div className="modal-backdrop investigation-backdrop"><section className="investigation-modal expression-modal" role="dialog" aria-modal="true" aria-labelledby="expression-title"><div className="investigation-top"><span className="mini-label">ETAPA 04 · EXPRESSAR</span><button className="icon-button" onClick={() => setExpressionProject(null)} aria-label="Fechar expressão"><X size={18} /></button></div><div className="eyebrow"><span className="eyebrow-line" />TRADUZIR A DIREÇÃO SEM PULAR A VALIDAÇÃO</div><h2 id="expression-title">Que forma essa marca pode assumir<span className="lime-period">?</span></h2><p className="investigation-prompt">Use a direção estratégica como ponto de partida. Registre possibilidades; não é uma geração automática nem uma identidade final.</p><div className="expression-fields">
+      {expressionProject && <div className="modal-backdrop investigation-backdrop"><section className="investigation-modal expression-modal" role="dialog" aria-modal="true" aria-labelledby="expression-title"><div className="investigation-top"><span className="mini-label">ETAPA 04 · EXPRESSAR</span><button className="icon-button" onClick={() => setExpressionProject(null)} aria-label="Fechar expressão"><X size={18} /></button></div><div className="eyebrow"><span className="eyebrow-line" />TRADUZIR A DIREÇÃO SEM PULAR A VALIDAÇÃO</div><h2 id="expression-title">Que forma essa marca pode assumir<span className="lime-period">?</span></h2><p className="investigation-prompt">Use a direção estratégica como ponto de partida. Gere uma hipótese editável com IA ou escreva cada dimensão manualmente. A aprovação continua sendo sua.</p><div className="analysis-generator"><button type="button" className="secondary-button" onClick={() => void generateBrandExpression()} disabled={generatingExpression}><Sparkles size={16} /> {generatingExpression ? "Construindo expressão…" : "Gerar proposta de expressão com IA"}</button><p className="investigation-footnote" role="status" aria-live="polite">{expressionFeedback || "A proposta usa a investigação, a análise e a direção registrada; revise cada campo antes de enviar para revisão."}</p></div><div className="expression-fields">
 <label htmlFor="expression-promise">01 · PROMESSA DA MARCA<textarea id="expression-promise" rows={3} value={draftExpression.brandPromise} onChange={e => setDraftExpression({ ...draftExpression, brandPromise: e.target.value })} placeholder="Que valor a marca quer entregar, de forma relevante e crível?" /></label>
 <label htmlFor="expression-personality">02 · PERSONALIDADE<textarea id="expression-personality" rows={3} value={draftExpression.personality} onChange={e => setDraftExpression({ ...draftExpression, personality: e.target.value })} placeholder="Se a marca fosse uma presença, como se comportaria? Que traços não combinam?" /></label>
 <label htmlFor="expression-voice">03 · PRINCÍPIOS DE VOZ<textarea id="expression-voice" rows={3} value={draftExpression.voicePrinciples} onChange={e => setDraftExpression({ ...draftExpression, voicePrinciples: e.target.value })} placeholder="Como fala, que palavras privilegia e que tom evita?" /></label>

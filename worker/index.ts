@@ -61,7 +61,7 @@ export default {
         const message = first.message && typeof first.message === "object" ? first.message as Record<string, unknown> : {}
         const raw = [output.response, output.output_text, output.generated_text, message.content, first.text].find(value => typeof value === "string" && value.trim())
         if (typeof raw !== "string") return json({ error: "O modelo não retornou direções em texto. Tente novamente." }, 502)
-        const cleaned = raw.trim().replace(/^\`\`\`(?:json)?\s*/i, "").replace(/\s*\`\`\`$/, "")
+        const cleaned = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "")
         let parsed: unknown
         try { parsed = JSON.parse(cleaned) } catch {
           const start = cleaned.indexOf("{")

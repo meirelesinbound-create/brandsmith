@@ -545,3 +545,75 @@ button.primary:hover, .primary-button:hover, .btn-primary:hover {
   background: var(--paper);
   border-color: var(--paper);
 }
+
+
+/* AI-generated logo concepts: keep the strategic alternatives easy to compare. */
+.logo-concepts-panel {
+  margin-top: 1.5rem;
+}
+.logo-boldness-control {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: .5rem 1rem;
+  align-items: center;
+  margin: 1rem 0;
+  color: var(--black);
+  font-size: .9rem;
+}
+.logo-boldness-control input {
+  grid-column: 1 / -1;
+  width: 100%;
+  accent-color: var(--lime);
+}
+.logo-concept-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 245px), 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.logo-concept-card,
+.logo-selected-concept {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid rgba(17, 17, 17, .18);
+  background: var(--paper);
+}
+.logo-concept-card-selected {
+  border: 2px solid var(--lime);
+  box-shadow: inset 0 0 0 1px var(--black);
+}
+.logo-concept-card h4,
+.logo-selected-concept h4 {
+  margin: .6rem 0;
+  color: var(--black);
+}
+.logo-concept-card p,
+.logo-selected-concept p {
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+.logo-concept-art {
+  display: grid;
+  place-items: center;
+  min-height: 150px;
+  margin: .75rem 0 1rem;
+  padding: .75rem;
+  background: #fff;
+  color: #111;
+  border: 1px solid rgba(17, 17, 17, .12);
+}
+.logo-concept-art svg {
+  display: block;
+  width: min(100%, 220px);
+  max-height: 220px;
+  height: auto;
+  color: #111;
+}
+.logo-concept-card button {
+  margin-top: .5rem;
+}
+@media (max-width: 640px) {
+  .logo-concept-grid {
+    grid-template-columns: 1fr;
+  }
+}

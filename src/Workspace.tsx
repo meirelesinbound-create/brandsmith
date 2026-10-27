@@ -62,7 +62,7 @@ function exportIdentityLogoSvg(title: string, palette: { hex: string }[], _symbo
   const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
-  const slug = title.normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'marca'
+  const slug = slugify(title, 'marca')
   link.href = url
   link.download = `brandsmith-conceito-${slug}.svg`
   document.body.appendChild(link)
@@ -117,7 +117,7 @@ function exportBrandGuide(title: string, category: string, identity: DirectionDr
   const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
-  const slug = title.normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'marca'
+  const slug = slugify(title, 'marca')
   link.href = url
   link.download = `brandsmith-sistema-de-marca-${slug}.md`
   document.body.appendChild(link)
@@ -677,7 +677,7 @@ function Workspace({ userId }: { userId?: string }) {
     const blob = new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
-    const slug = project.name.normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'projeto'
+    const slug = slugify(project.name, 'projeto')
     link.href = url
     link.download = `brandsmith-${slug}.md`
     document.body.appendChild(link)

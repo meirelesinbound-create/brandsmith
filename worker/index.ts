@@ -1,3 +1,5 @@
+import { handleLogoConcepts } from "./logoConcepts"
+
 interface Env {
   AI: {
     run(model: string, input: { messages: Array<{ role: string; content: string }> }): Promise<unknown>
@@ -15,6 +17,7 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url)
+    if (url.pathname === "/api/logo-concepts") return handleLogoConcepts(request, env)
     if (url.pathname === "/api/expression") {
       if (request.method !== "POST") return json({ error: "Método não permitido." }, 405)
       const authorization = request.headers.get("Authorization") || ""

@@ -41,4 +41,4 @@ O endpoint `POST /api/strategy` roda no mesmo domínio da aplicação. O token d
 4. Publique o Worker junto com os assets estáticos. A configuração faz as rotas `/api/*` passarem pelo Worker e entrega as demais rotas ao site estático.
 5. Para desenvolvimento local, use `wrangler dev` com um arquivo local `.dev.vars` contendo as duas variáveis; não versione esse arquivo.
 
-Se o binding ou as variáveis não estiverem configurados, a interface exibirá o erro retornado pelo endpoint em vez de simular uma análise. O modelo atual é `@cf/meta/llama-3.1-8b-instruct`; disponibilidade e limites dependem da conta Cloudflare.
+Se o binding ou as variáveis não estiverem configurados, a interface exibirá o erro retornado pelo endpoint em vez de simular uma análise. O modelo atual é `@cf/zai-org/glm-4.7-flash` (definido em `worker/index.ts`); disponibilidade e limites dependem da conta Cloudflare.
